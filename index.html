@@ -885,6 +885,13 @@ async function startApp() {
   priceInput.dispatchEvent(new Event('change'));
   hideHelp();
 
+  // ここが「ボタンを おした その しゅんかん」。
+  // iOS は ユーザー操作の 直後でないと 発話を むしすることが あるため、
+  // カメラの 許可（ダイアログで 操作が とぎれる）より 前に、
+  // ここで 音声合成を いちど うごかして ロックを といておく。
+  unlockSpeech();
+  loadJapaneseVoice();
+
   let camOk = false;
   try {
     await askCameraPermission();
@@ -914,6 +921,17 @@ async function enterMainScreen() {
   startLoop();
 }
 
+// 音声合成の ロックを とく（無音の ひとことを はなす）
+function unlockSpeech() {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    u.lang = 'ja-JP';
+    speechSynthesis.speak(u);
+  } catch (e) { console.warn('Speech unlock:', e); }
+}
+
 function initAudio() {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -921,12 +939,7 @@ function initAudio() {
     playBeep(0.01);
   } catch (e) { console.warn('AudioContext:', e); }
 
-  try {
-    const u = new SpeechSynthesisUtterance(' ');
-    u.volume = 0;
-    speechSynthesis.speak(u);
-  } catch (e) { console.warn('Speech:', e); }
-
+  unlockSpeech();
   loadJapaneseVoice();
 }
 

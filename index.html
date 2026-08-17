@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>バーコードよみとりごっこ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@undecaf/barcode-detector-polyfill@0.9.20/dist/index.js"></script>
+<style>
+  :root{
+    --bg:#fef9ef;
+    --panel:#ffffff;
+    --accent:#ff8a3d;
+    --accent-dark:#e06a1f;
+    --ok:#3ba55c;
+    --ok-dark:#2c8a48;
+    --ink:#3a3226;
+    --sub:#8a8070;
+    --line:#eee2cf;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg);
+    font-family:"BIZ UDPGothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+    color:var(--ink);
+    touch-action:manipulation;
+    user-select:none;
+    -webkit-user-select:none;
+    overscroll-behavior:none;
+  }
+  #app{
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    padding:max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  .screen{ width:100%; max-width:720px; display:flex; flex-direction:column; align-items:center; gap:18px; }
+  .hidden{ display:none !important; }
+
+  /* ---------- スタート画面 ---------- */
+  .logo-wrap{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    margin-bottom:6px;
+  }
+  .logo-icon{
+    width:96px; height:96px;
+    background:var(--panel);
+    border:3px solid var(--accent);
+    border-radius:26px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:52px;
+  }
+  h1{
+    font-size:clamp(22px, 5vw, 30px);
+    margin:0;
+    text-align:center;
+    line-height:1.5;
+  }
+  .lead{
+    font-size:clamp(15px, 3.6vw, 18px);
+    color:var(--sub);
+    text-align:center;
+    line-height:1.9;
+    margin:0;
+    max-width:520px;
+  }
+  ruby rt{ font-size:0.55em; color:var(--sub); }
+
+  .big-btn{
+    min-height:64px;
+    padding:14px 40px;
+    font-size:clamp(18px,4.4vw,22px);
+    font-weight:700;
+    font-family:inherit;
+    color:#fff;
+    background:var(--accent);
+    border:none;
+    border-radius:20px;
+    box-shadow:0 5px 0 var(--accent-dark);
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .big-btn:active{
+    transform:translateY(4px);
+    box-shadow:0 1px 0 var(--accent-dark);
+  }
+  .small-btn{
+    min-height:48px;
+    min-width:48px;
+    padding:10px 22px;
+    font-size:16px;
+    font-family:inherit;
+    font-weight:700;
+    color:var(--ink);
+    background:#fff;
+    border:2px solid var(--line);
+    border-radius:14px;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .small-btn:active{ background:var(--line); }
+
+  /* ---------- 設定パネル(教員用) ---------- */
+  .settings-panel{
+    width:100%;
+    background:var(--panel);
+    border:2px solid var(--line);
+    border-radius:18px;
+    padding:16px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .settings-title{
+    font-size:14px;
+    color:var(--sub);
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .setting-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .setting-label{ font-size:15px; }
+  .toggle{
+    min-height:44px;
+    min-width:88px;
+    border-radius:22px;
+    border:2px solid var(--line);
+    background:#f6f1e6;
+    font-family:inherit;
+    font-weight:700;
+    font-size:14px;
+    color:var(--ink);
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .toggle.on{
+    background:var(--ok);
+    border-color:var(--ok-dark);
+    color:#fff;
+  }
+  .num-stepper{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .num-stepper button{
+    width:44px; height:44px;
+    border-radius:12px;
+    border:2px solid var(--line);
+    background:#f6f1e6;
+    font-size:20px;
+    font-weight:700;
+    font-family:inherit;
+    color:var(--ink);
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .num-stepper button:active{ background:var(--line); }
+  .num-stepper input{
+    width:64px;
+    height:44px;
+    text-align:center;
+    font-size:17px;
+    font-family:inherit;
+    border:2px solid var(--line);
+    border-radius:12px;
+    background:#fff;
+    color:var(--ink);
+  }
+
+  /* ---------- 活動画面 ---------- */
+  .camera-wrap{
+    position:relative;
+    width:100%;
+    max-width:520px;
+    aspect-ratio:3/4;
+    background:#222;
+    border-radius:24px;
+    overflow:hidden;
+    border:4px solid var(--panel);
+    box-shadow:0 6px 0 var(--line);
+  }
+  video{
+    width:100%; height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .scan-frame{
+    position:absolute;
+    left:10%; right:10%; top:32%; bottom:32%;
+    border:4px dashed rgba(255,255,255,0.85);
+    border-radius:16px;
+    pointer-events:none;
+  }
+  .status-badge{
+    position:absolute;
+    top:14px; left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,0.55);
+    color:#fff;
+    padding:8px 18px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:700;
+    white-space:nowrap;
+    transition:background .2s;
+  }
+  .status-badge.ready{ background:rgba(0,0,0,0.55); }
+  .status-badge.scanning{ background:rgba(255,138,61,0.85); }
+  .status-badge.success{ background:rgba(59,165,92,0.9); }
+  .cooldown-fill{
+    position:absolute;
+    left:0; bottom:0; height:6px;
+    background:var(--ok);
+    width:0%;
+    transition:width .1s linear;
+  }
+
+  .result-card{
+    width:100%;
+    max-width:520px;
+    background:var(--panel);
+    border:2px solid var(--line);
+    border-radius:22px;
+    padding:18px 22px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    min-height:88px;
+    justify-content:center;
+    text-align:center;
+  }
+  .result-message{
+    font-size:clamp(20px, 5vw, 26px);
+    font-weight:700;
+    color:var(--ink);
+    line-height:1.5;
+  }
+  .result-sub{
+    font-size:14px;
+    color:var(--sub);
+  }
+  .result-card.flash{
+    animation:flashOk .6s ease;
+  }
+  @keyframes flashOk{
+    0%{ background:#dff5e4; }
+    100%{ background:var(--panel); }
+  }
+
+  .controls-row{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+
+  .camera-error{
+    padding:20px;
+    text-align:center;
+    color:var(--ink);
+    font-size:16px;
+    line-height:1.8;
+  }
+
+  /* ---------- 使い方モーダル ---------- */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(58,50,38,0.5);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .modal-box{
+    background:var(--panel);
+    border-radius:22px;
+    padding:26px 24px;
+    max-width:440px;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    max-height:86vh;
+    overflow-y:auto;
+  }
+  .modal-box h2{ margin:0; font-size:20px; text-align:center; }
+  .modal-box ol{
+    margin:0; padding-left:20px;
+    font-size:15px;
+    line-height:2;
+    color:var(--ink);
+  }
+  .modal-checkbox-row{
+    display:flex; align-items:center; gap:8px;
+    font-size:14px; color:var(--sub);
+  }
+  .modal-checkbox-row input{ width:20px; height:20px; }
+
+  @media (orientation:landscape) and (max-height:480px){
+    .screen{ flex-direction:row; align-items:center; gap:14px; }
+    .camera-wrap{ max-width:44vh; aspect-ratio:3/4; }
+    h1{ font-size:18px; }
+  }
+
+  footer.hint{
+    font-size:12px;
+    color:var(--sub);
+    text-align:center;
+    margin-top:4px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== スタート画面 ===== -->
+  <div id="screen-start" class="screen">
+    <div class="logo-wrap">
+      <div class="logo-icon">🛒</div>
+      <h1><ruby>読<rt>よ</rt></ruby>み<ruby>取<rt>と</rt></ruby>りごっこ</h1>
+    </div>
+    <p class="lead">
+      カメラに<ruby>商品<rt>しょうひん</rt></ruby>の<ruby>絵<rt>え</rt></ruby>や<ruby>箱<rt>はこ</rt></ruby>を<br>
+      うつすと、ねだんを<ruby>教<rt>おし</rt></ruby>えてくれるよ。
+    </p>
+    <button id="btn-start" class="big-btn">はじめる</button>
+    <button id="btn-howto" class="small-btn">つかいかた</button>
+
+    <div class="settings-panel">
+      <div class="settings-title">⚙️ <ruby>先生用<rt>せんせいよう</rt></ruby>のせってい</div>
+
+      <div class="setting-row">
+        <span class="setting-label"><ruby>音<rt>おと</rt></ruby></span>
+        <button id="toggle-sound" class="toggle on">ON</button>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label"><ruby>読<rt>よ</rt></ruby>み<ruby>取<rt>と</rt></ruby>りやすさ</span>
+        <div class="num-stepper">
+          <button id="sens-down" type="button">▽</button>
+          <input id="sens-input" type="text" inputmode="numeric" value="3" readonly>
+          <button id="sens-up" type="button">△</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--sub);margin-top:-6px;">
+        (1:きびしい 〜 5:とてもゆるい／どんなバーコードでも反応します)
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label"><ruby>連続防止<rt>れんぞくぼうし</rt></ruby>びょう<ruby>数<rt>すう</rt></ruby></span>
+        <div class="num-stepper">
+          <button id="cool-down" type="button">▽</button>
+          <input id="cool-input" type="text" inputmode="numeric" value="2" readonly>
+          <button id="cool-up" type="button">△</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 活動画面 ===== -->
+  <div id="screen-scan" class="screen hidden">
+    <div class="camera-wrap">
+      <video id="video" playsinline autoplay muted></video>
+      <div class="scan-frame"></div>
+      <div id="status-badge" class="status-badge ready">じゅんび中</div>
+      <div id="cooldown-fill" class="cooldown-fill"></div>
+    </div>
+
+    <div id="result-card" class="result-card">
+      <div id="result-message" class="result-message">バーコードを<ruby>見<rt>み</rt></ruby>せてね</div>
+      <div id="result-sub" class="result-sub"></div>
+    </div>
+
+    <div class="controls-row">
+      <button id="btn-back" class="small-btn">もどる</button>
+      <button id="btn-sound-scan" class="small-btn">🔊 音:ON</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== 使い方モーダル ===== -->
+<div id="modal-howto" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2><ruby>使<rt>つか</rt></ruby>い<ruby>方<rt>かた</rt></ruby></h2>
+    <ol>
+      <li>「はじめる」を<ruby>押<rt>お</rt></ruby>すと、カメラがうつるよ。</li>
+      <li>バーコードや<ruby>商品<rt>しょうひん</rt></ruby>を<ruby>枠<rt>わく</rt></ruby>の<ruby>中<rt>なか</rt></ruby>に<ruby>入<rt>い</rt></ruby>れてね。</li>
+      <li>「ピッ」と<ruby>音<rt>おと</rt></ruby>がしたら、ねだんが<ruby>出<rt>で</rt></ruby>るよ。</li>
+      <li>すこし<ruby>間<rt>ま</rt></ruby>を<ruby>空<rt>あ</rt></ruby>けてから、また<ruby>次<rt>つぎ</rt></ruby>のバーコードを<ruby>見<rt>み</rt></ruby>せてね。</li>
+    </ol>
+    <div class="modal-checkbox-row">
+      <input type="checkbox" id="chk-dont-show">
+      <label for="chk-dont-show">つぎからひょうじしない</label>
+    </div>
+    <button id="btn-modal-close" class="big-btn" style="align-self:center;">わかった</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- 要素 ---------- */
+  const screenStart = document.getElementById('screen-start');
+  const screenScan = document.getElementById('screen-scan');
+  const btnStart = document.getElementById('btn-start');
+  const btnBack = document.getElementById('btn-back');
+  const btnHowto = document.getElementById('btn-howto');
+  const modalHowto = document.getElementById('modal-howto');
+  const btnModalClose = document.getElementById('btn-modal-close');
+  const chkDontShow = document.getElementById('chk-dont-show');
+
+  const toggleSound = document.getElementById('toggle-sound');
+  const btnSoundScan = document.getElementById('btn-sound-scan');
+  const sensInput = document.getElementById('sens-input');
+  const sensUp = document.getElementById('sens-up');
+  const sensDown = document.getElementById('sens-down');
+  const coolInput = document.getElementById('cool-input');
+  const coolUp = document.getElementById('cool-up');
+  const coolDown = document.getElementById('cool-down');
+
+  const video = document.getElementById('video');
+  const statusBadge = document.getElementById('status-badge');
+  const cooldownFill = document.getElementById('cooldown-fill');
+  const resultCard = document.getElementById('result-card');
+  const resultMessage = document.getElementById('result-message');
+  const resultSub = document.getElementById('result-sub');
+
+  /* ---------- 状態 ---------- */
+  let soundOn = true;
+  let sensitivity = 3;   // 1〜5 (大きいほどゆるい)
+  let cooldownSec = 2;   // 連続防止の秒数
+  let stream = null;
+  let detector = null;
+  let rafId = null;
+  let scanning = false;
+  let inCooldown = false;
+  let successStreak = 0;   // 「ゆるさ」の判定に使う連続フレーム数
+  let lastDetectTime = 0;
+  let audioCtx = null;
+
+  /* localStorage は GitHub Pages 上でのみ動作します(プレビューでは保存されません) */
+  function loadPrefs(){
+    try{
+      const dontShow = localStorage.getItem('barcode-howto-hide');
+      if(dontShow === '1'){
+        modalShownOnce = true;
+      }
+    }catch(e){ /* noop */ }
+  }
+  let modalShownOnce = false;
+  loadPrefs();
+
+  /* ---------- 設定UI ---------- */
+  toggleSound.addEventListener('click', ()=>{
+    soundOn = !soundOn;
+    syncSoundUI();
+  });
+  btnSoundScan.addEventListener('click', ()=>{
+    soundOn = !soundOn;
+    syncSoundUI();
+  });
+  function syncSoundUI(){
+    toggleSound.textContent = soundOn ? 'ON' : 'OFF';
+    toggleSound.classList.toggle('on', soundOn);
+    btnSoundScan.textContent = soundOn ? '🔊 音:ON' : '🔇 音:OFF';
+  }
+
+  sensUp.addEventListener('click', ()=>{
+    sensitivity = Math.min(5, sensitivity+1);
+    sensInput.value = sensitivity;
+  });
+  sensDown.addEventListener('click', ()=>{
+    sensitivity = Math.max(1, sensitivity-1);
+    sensInput.value = sensitivity;
+  });
+  coolUp.addEventListener('click', ()=>{
+    cooldownSec = Math.min(10, cooldownSec+1);
+    coolInput.value = cooldownSec;
+  });
+  coolDown.addEventListener('click', ()=>{
+    cooldownSec = Math.max(1, cooldownSec-1);
+    coolInput.value = cooldownSec;
+  });
+
+  /* ---------- 使い方モーダル ---------- */
+  function showHowto(){
+    modalHowto.classList.remove('hidden');
+  }
+  function hideHowto(){
+    modalHowto.classList.add('hidden');
+  }
+  btnHowto.addEventListener('click', showHowto);
+  btnModalClose.addEventListener('click', ()=>{
+    if(chkDontShow.checked){
+      try{ localStorage.setItem('barcode-howto-hide','1'); }catch(e){}
+    }
+    hideHowto();
+  });
+
+  /* ---------- 効果音(Web Audio API / ON-OFF可) ---------- */
+  function ensureAudioCtx(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    if(audioCtx && audioCtx.state === 'suspended'){
+      audioCtx.resume();
+    }
+  }
+  function playBeep(){
+    if(!soundOn) return;
+    ensureAudioCtx();
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.28, audioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
+  }
+
+  /* ---------- 音声読み上げ(ひゃくじゅうえんです) ---------- */
+  function speakPrice(){
+    if(!soundOn) return;
+    if(!('speechSynthesis' in window)) return;
+    try{
+      const utter = new SpeechSynthesisUtterance('ひゃくじゅうえんです');
+      utter.lang = 'ja-JP';
+      utter.rate = 0.95;
+      utter.pitch = 1.0;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    }catch(e){ /* noop */ }
+  }
+
+  /* ---------- 画面遷移 ---------- */
+  btnStart.addEventListener('click', ()=>{
+    ensureAudioCtx();
+    if(!modalShownOnce){
+      showHowto();
+      modalShownOnce = true;
+    }
+    screenStart.classList.add('hidden');
+    screenScan.classList.remove('hidden');
+    startCamera();
+  });
+
+  btnBack.addEventListener('click', ()=>{
+    stopCamera();
+    screenScan.classList.add('hidden');
+    screenStart.classList.remove('hidden');
+    resetResult();
+  });
+
+  function resetResult(){
+    resultMessage.textContent = 'バーコードを見せてね';
+    resultSub.textContent = '';
+    resultCard.classList.remove('flash');
+    setStatus('ready', 'じゅんび中');
+    cooldownFill.style.width = '0%';
+  }
+
+  function setStatus(kind, text){
+    statusBadge.className = 'status-badge ' + kind;
+    statusBadge.textContent = text;
+  }
+
+  /* ---------- カメラ ---------- */
+  async function startCamera(){
+    resetResult();
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play();
+      setupDetector();
+      scanning = true;
+      successStreak = 0;
+      lastDetectTime = 0;
+      rafId = requestAnimationFrame(scanLoop);
+    }catch(err){
+      screenScan.querySelector('.camera-wrap').innerHTML =
+        '<div class="camera-error">カメラが使えなかったよ。<br>ブラウザのせっていでカメラを許可してね。</div>';
+    }
+  }
+
+  function stopCamera(){
+    scanning = false;
+    if(rafId) cancelAnimationFrame(rafId);
+    if(stream){
+      stream.getTracks().forEach(t=>t.stop());
+      stream = null;
+    }
+  }
+
+  /* ---------- バーコード検出器のセットアップ ----------
+     ネイティブの BarcodeDetector があれば使い、なければ
+     jsdelivr 経由のポリフィルを使う。
+  ------------------------------------------------------ */
+  function setupDetector(){
+    try{
+      if('BarcodeDetector' in window){
+        detector = new BarcodeDetector({
+          formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']
+        });
+      } else if(window.BarcodeDetectorPolyfill){
+        window.BarcodeDetectorPolyfill.setZBarWasmURL(
+          'https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.16/dist/zbar.wasm'
+        );
+        detector = new window.BarcodeDetectorPolyfill({
+          formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']
+        });
+      }
+    }catch(e){
+      detector = null;
+    }
+  }
+
+  /* ---------- 検出ループ ----------
+     「わざと制度をゆるく」: sensitivity が高いほど、
+     ・必要な連続検出フレーム数を減らす
+     ・検出成功とみなす閾値を下げる
+     ・検出APIが何かを見つけたらほぼ即成功にする
+     揺れ/斜め/ピンボケでも、フレームのどこかで一瞬でも
+     読めれば成功にすることで「おもちゃ感」を出す。
+  ------------------------------------------------------ */
+  const REQUIRED_STREAK_BY_SENS = {1:4, 2:3, 3:2, 4:1, 5:1};
+
+  async function scanLoop(ts){
+    if(!scanning) return;
+
+    if(inCooldown){
+      rafId = requestAnimationFrame(scanLoop);
+      return;
+    }
+
+    // 検出は毎フレームやると重いので間引く(約150msごと)
+    if(!lastDetectTime || ts - lastDetectTime > 150){
+      lastDetectTime = ts;
+      await tryDetect();
+    }
+
+    rafId = requestAnimationFrame(scanLoop);
+  }
+
+  async function tryDetect(){
+    if(!detector || video.readyState < 2) return;
+    try{
+      const codes = await detector.detect(video);
+      if(codes && codes.length > 0){
+        successStreak++;
+        setStatus('scanning', 'よみとり中…');
+        const need = REQUIRED_STREAK_BY_SENS[sensitivity] || 2;
+        if(successStreak >= need){
+          onScanSuccess();
+        }
+      } else {
+        // ゆるさレベル5のときは、検出器が空振りでも
+        // 明るさ/コントラストの変化だけで「反応した感」を
+        // 出したいところだが、誤反応を避けるため、
+        // ここでは純粋にストリークをリセットするに留める。
+        successStreak = Math.max(0, successStreak - 1);
+        if(successStreak === 0) setStatus('ready', 'じゅんび中');
+      }
+    }catch(e){
+      // 検出エラーはよくある(認識できないフレーム)ので無視
+      successStreak = Math.max(0, successStreak - 1);
+    }
+  }
+
+  function onScanSuccess(){
+    successStreak = 0;
+    setStatus('success', 'ピッ！');
+    playBeep();
+    speakPrice();
+
+    resultMessage.textContent = 'ひゃくじゅうえんです';
+    resultSub.textContent = '¥110';
+    resultCard.classList.remove('flash');
+    void resultCard.offsetWidth; // reflow でアニメ再生
+    resultCard.classList.add('flash');
+
+    startCooldown();
+  }
+
+  /* ---------- クールダウン(連続で鳴り続けない) ---------- */
+  function startCooldown(){
+    inCooldown = true;
+    const totalMs = cooldownSec * 1000;
+    const startTime = performance.now();
+
+    function step(now){
+      const elapsed = now - startTime;
+      const pct = Math.min(100, (elapsed/totalMs)*100);
+      cooldownFill.style.width = pct + '%';
+      if(elapsed < totalMs){
+        requestAnimationFrame(step);
+      } else {
+        inCooldown = false;
+        cooldownFill.style.width = '0%';
+        setStatus('ready', 'じゅんび中');
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- 初期化 ---------- */
+  syncSoundUI();
+
+})();
+</script>
+</body>
+</html>

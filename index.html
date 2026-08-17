@@ -796,6 +796,10 @@ function toggleSpeak() {
   settings.speak = !settings.speak;
   speakBtn.classList.toggle('selected', settings.speak);
   speakBtn.textContent = settings.speak ? 'よみあげ あり' : 'よみあげ なし';
+  if (settings.speak) {
+    initAudio();          // 音声リストが まだなら ここで さがす
+    setTimeout(() => speak('よみあげ オン'), 150);
+  }
 }
 
 /* =========================================================
@@ -898,6 +902,46 @@ function initAudio() {
     u.volume = 0;
     speechSynthesis.speak(u);
   } catch (e) { console.warn('Speech:', e); }
+
+  loadJapaneseVoice();
+}
+
+/* =========================================================
+   日本語の こえを さがしておく
+   iOS の Safari では speechSynthesis.getVoices() が
+   すぐには 中身を かえさないことが あるため、
+   voiceschanged イベントを まって さがし直す。
+   声を明示的に指定しないと、iOSでは 無音のまま
+   おわってしまうことがある。
+   ========================================================= */
+let cachedJaVoice = null;
+
+function pickJapaneseVoice() {
+  try {
+    const voices = speechSynthesis.getVoices() || [];
+    if (voices.length === 0) return null;
+    let v = voices.find(v => v.lang === 'ja-JP');
+    if (!v) v = voices.find(v => (v.lang || '').toLowerCase().startsWith('ja'));
+    return v || null;
+  } catch (e) { return null; }
+}
+
+function loadJapaneseVoice() {
+  cachedJaVoice = pickJapaneseVoice();
+  if (cachedJaVoice) return;
+
+  // まだ 読み込めていない → voiceschanged を まつ
+  try {
+    speechSynthesis.onvoiceschanged = () => {
+      cachedJaVoice = pickJapaneseVoice();
+    };
+  } catch (e) {}
+
+  // 保険：すこし ま って もう一度 さがす
+  setTimeout(() => {
+    if (!cachedJaVoice) cachedJaVoice = pickJapaneseVoice();
+    if (!cachedJaVoice) console.warn('日本語の 読み上げボイスが 見つかりません');
+  }, 500);
 }
 
 function backToSetting() {
@@ -1305,6 +1349,8 @@ function speak(text) {
     u.lang = 'ja-JP';
     u.rate = 1.0;
     u.volume = 1.0;
+    if (!cachedJaVoice) cachedJaVoice = pickJapaneseVoice();
+    if (cachedJaVoice) u.voice = cachedJaVoice;
     speechSynthesis.speak(u);
   } catch (e) {}
 }

@@ -1,753 +1,983 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>バーコードよみとりごっこ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>100均レジ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
-<script type="module">
-  import { readBarcodesFromImageData, prepareZXingModule } from "https://cdn.jsdelivr.net/npm/zxing-wasm@2.1.0/dist/reader/index.js";
-  prepareZXingModule({
-    overrides: {
-      locateFile: (path, prefix) => {
-        if (path.endsWith(".wasm")) {
-          return "https://cdn.jsdelivr.net/npm/zxing-wasm@2.1.0/dist/reader/" + path;
-        }
-        return prefix + path;
-      }
-    }
-  });
-  window.__zxing = { readBarcodesFromImageData };
-  window.dispatchEvent(new Event('zxing-ready'));
-</script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  :root{
-    --bg:#fef9ef;
-    --panel:#ffffff;
-    --accent:#ff8a3d;
-    --accent-dark:#e06a1f;
-    --ok:#3ba55c;
-    --ok-dark:#2c8a48;
-    --ink:#3a3226;
-    --sub:#8a8070;
-    --line:#eee2cf;
-  }
-  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{
-    margin:0; padding:0; height:100%;
-    background:var(--bg);
-    font-family:"BIZ UDPGothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
-    color:var(--ink);
-    touch-action:manipulation;
-    user-select:none;
-    -webkit-user-select:none;
-    overscroll-behavior:none;
-  }
-  #app{
-    height:100vh;
-    height:100dvh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    padding:16px;
-    padding:max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  }
-  .screen{ width:100%; max-width:720px; display:flex; flex-direction:column; align-items:center; gap:18px; }
-  .hidden{ display:none !important; }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  /* ---------- スタート画面 ---------- */
-  .logo-wrap{
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-    margin-bottom:6px;
-  }
-  .logo-icon{
-    width:96px; height:96px;
-    background:var(--panel);
-    border:3px solid var(--accent);
-    border-radius:26px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:52px;
-  }
-  h1{
-    font-size:clamp(22px, 5vw, 30px);
-    margin:0;
-    text-align:center;
-    line-height:1.5;
-  }
-  .lead{
-    font-size:clamp(15px, 3.6vw, 18px);
-    color:var(--sub);
-    text-align:center;
-    line-height:1.9;
-    margin:0;
-    max-width:520px;
-  }
-  ruby rt{ font-size:0.55em; color:var(--sub); }
+html, body {
+  height: 100%;
+}
 
-  .big-btn{
-    min-height:64px;
-    padding:14px 40px;
-    font-size:clamp(18px,4.4vw,22px);
-    font-weight:700;
-    font-family:inherit;
-    color:#fff;
-    background:var(--accent);
-    border:none;
-    border-radius:20px;
-    box-shadow:0 5px 0 var(--accent-dark);
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .big-btn:active{
-    transform:translateY(4px);
-    box-shadow:0 1px 0 var(--accent-dark);
-  }
-  .small-btn{
-    min-height:48px;
-    min-width:48px;
-    padding:10px 22px;
-    font-size:16px;
-    font-family:inherit;
-    font-weight:700;
-    color:var(--ink);
-    background:#fff;
-    border:2px solid var(--line);
-    border-radius:14px;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .small-btn:active{ background:var(--line); }
+body {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  background-color: #FFF8E1;
+  color: #3E2723;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  /* ---------- 設定パネル(教員用) ---------- */
-  .settings-panel{
-    width:100%;
-    background:var(--panel);
-    border:2px solid var(--line);
-    border-radius:18px;
-    padding:16px 18px;
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-  }
-  .settings-title{
-    font-size:14px;
-    color:var(--sub);
-    font-weight:700;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .setting-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .setting-label{ font-size:15px; }
-  .toggle{
-    min-height:44px;
-    min-width:88px;
-    border-radius:22px;
-    border:2px solid var(--line);
-    background:#f6f1e6;
-    font-family:inherit;
-    font-weight:700;
-    font-size:14px;
-    color:var(--ink);
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .toggle.on{
-    background:var(--ok);
-    border-color:var(--ok-dark);
-    color:#fff;
-  }
-  .num-stepper{
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .num-stepper button{
-    width:44px; height:44px;
-    border-radius:12px;
-    border:2px solid var(--line);
-    background:#f6f1e6;
-    font-size:20px;
-    font-weight:700;
-    font-family:inherit;
-    color:var(--ink);
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .num-stepper button:active{ background:var(--line); }
-  .num-stepper input{
-    width:64px;
-    height:44px;
-    text-align:center;
-    font-size:17px;
-    font-family:inherit;
-    border:2px solid var(--line);
-    border-radius:12px;
-    background:#fff;
-    color:var(--ink);
-  }
+ruby rt { font-size: 0.5em; font-weight: 400; }
 
-  /* ---------- 活動画面 ---------- */
-  .camera-wrap{
-    position:relative;
-    width:100%;
-    max-width:520px;
-    aspect-ratio:3/4;
-    background:#222;
-    border-radius:24px;
-    overflow:hidden;
-    border:4px solid var(--panel);
-    box-shadow:0 6px 0 var(--line);
-  }
-  video{
-    width:100%; height:100%;
-    object-fit:cover;
-    display:block;
-  }
-  .scan-frame{
-    position:absolute;
-    left:10%; right:10%; top:32%; bottom:32%;
-    border:4px dashed rgba(255,255,255,0.85);
-    border-radius:16px;
-    pointer-events:none;
-  }
-  .status-badge{
-    position:absolute;
-    top:14px; left:50%;
-    transform:translateX(-50%);
-    background:rgba(0,0,0,0.55);
-    color:#fff;
-    padding:8px 18px;
-    border-radius:999px;
-    font-size:14px;
-    font-weight:700;
-    white-space:nowrap;
-    transition:background .2s;
-  }
-  .status-badge.ready{ background:rgba(0,0,0,0.55); }
-  .status-badge.scanning{ background:rgba(255,138,61,0.85); }
-  .status-badge.success{ background:rgba(59,165,92,0.9); }
-  .cooldown-fill{
-    position:absolute;
-    left:0; bottom:0; height:6px;
-    background:var(--ok);
-    width:0%;
-    transition:width .1s linear;
-  }
+button {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
 
-  .result-card{
-    width:100%;
-    max-width:520px;
-    background:var(--panel);
-    border:2px solid var(--line);
-    border-radius:22px;
-    padding:18px 22px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:6px;
-    min-height:88px;
-    justify-content:center;
-    text-align:center;
-  }
-  .result-message{
-    font-size:clamp(20px, 5vw, 26px);
-    font-weight:700;
-    color:var(--ink);
-    line-height:1.5;
-  }
-  .result-sub{
-    font-size:14px;
-    color:var(--sub);
-  }
-  .result-card.flash{
-    animation:flashOk .6s ease;
-  }
-  @keyframes flashOk{
-    0%{ background:#dff5e4; }
-    100%{ background:var(--panel); }
-  }
+/* ========== スタート画面 ========== */
+#start-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+}
 
-  .controls-row{
-    display:flex;
-    gap:12px;
-    flex-wrap:wrap;
-    justify-content:center;
-  }
+#start-screen h1 {
+  font-size: 34px;
+  color: #E65100;
+  margin: 8px 0 4px;
+  text-align: center;
+}
 
-  .camera-error{
-    padding:20px;
-    text-align:center;
-    color:var(--ink);
-    font-size:16px;
-    line-height:1.8;
-  }
+#start-screen .lead {
+  font-size: 17px;
+  color: #6D4C41;
+  margin-bottom: 18px;
+  text-align: center;
+  line-height: 1.7;
+}
 
-  /* ---------- 使い方モーダル ---------- */
-  .modal-overlay{
-    position:fixed; inset:0;
-    background:rgba(58,50,38,0.5);
-    display:flex; align-items:center; justify-content:center;
-    padding:20px;
-    z-index:50;
-  }
-  .modal-box{
-    background:var(--panel);
-    border-radius:22px;
-    padding:26px 24px;
-    max-width:440px;
-    width:100%;
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-    max-height:86vh;
-    overflow-y:auto;
-  }
-  .modal-box h2{ margin:0; font-size:20px; text-align:center; }
-  .modal-box ol{
-    margin:0; padding-left:20px;
-    font-size:15px;
-    line-height:2;
-    color:var(--ink);
-  }
-  .modal-checkbox-row{
-    display:flex; align-items:center; gap:8px;
-    font-size:14px; color:var(--sub);
-  }
-  .modal-checkbox-row input{ width:20px; height:20px; }
+.setting-card {
+  width: 100%;
+  max-width: 560px;
+  background-color: #fff;
+  border: 3px solid #FFCC80;
+  border-radius: 16px;
+  padding: 14px 14px 18px;
+  margin-bottom: 18px;
+}
 
-  @media (orientation:landscape) and (max-height:480px){
-    .screen{ flex-direction:row; align-items:center; gap:14px; }
-    .camera-wrap{ max-width:44vh; aspect-ratio:3/4; }
-    h1{ font-size:18px; }
-  }
+.setting-card > h2 {
+  font-size: 17px;
+  color: #E65100;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px dotted #FFCC80;
+}
 
-  footer.hint{
-    font-size:12px;
-    color:var(--sub);
-    text-align:center;
-    margin-top:4px;
-  }
+.setting-row {
+  margin-bottom: 16px;
+}
+.setting-row:last-child { margin-bottom: 0; }
+
+.setting-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #5D4037;
+  margin-bottom: 6px;
+}
+
+.setting-note {
+  font-size: 13px;
+  color: #8D6E63;
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+/* 選択ボタン */
+.choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice-btn {
+  flex: 1 1 100px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #795548;
+  background-color: #FFF3E0;
+  border: 3px solid #FFCC80;
+  border-radius: 12px;
+  padding: 12px 6px;
+}
+
+.choice-btn.selected {
+  color: #fff;
+  background-color: #FB8C00;
+  border-color: #EF6C00;
+}
+
+/* 数字＋△▽ */
+.number-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.step-btn {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  background-color: #FB8C00;
+  border: none;
+  border-radius: 12px;
+  width: 54px;
+  height: 48px;
+  line-height: 1;
+}
+.step-btn:active { background-color: #EF6C00; }
+
+.number-box input {
+  font-family: 'BIZ UDPGothic', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  color: #E65100;
+  width: 96px;
+  height: 48px;
+  border: 3px solid #FFCC80;
+  border-radius: 12px;
+  background-color: #FFFDE7;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.number-unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: #795548;
+}
+
+#start-btn {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  background-color: #FF6D00;
+  border: none;
+  border-radius: 16px;
+  padding: 20px 44px;
+  box-shadow: 0 5px 0 #BF360C;
+  transition: transform .08s;
+}
+#start-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #BF360C; }
+
+/* ========== メイン画面 ========== */
+#main-screen {
+  display: none;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.header {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px 8px 6px;
+  background-color: #FF6D00;
+}
+
+.info-box {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 6px 6px 8px;
+  text-align: center;
+}
+
+.info-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #A1887F;
+}
+
+.info-value {
+  font-size: 30px;
+  font-weight: 700;
+  color: #E65100;
+  line-height: 1.1;
+}
+
+.btn-setting {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: #E65100;
+  background-color: #FFE0B2;
+  border: none;
+  border-radius: 12px;
+  padding: 6px 10px;
+  width: 60px;
+}
+
+.product-bar {
+  text-align: center;
+  padding: 6px 8px 8px;
+  background-color: #FF6D00;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* スキャナー */
+.scanner-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  gap: 8px;
+}
+
+.reader-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  touch-action: none;
+}
+
+#reader {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: #EFEBE9;
+  min-height: 180px;
+}
+
+#reader video {
+  display: block;
+  width: 100% !important;
+  border-radius: 14px;
+}
+
+/* 読み取り枠（自作オーバーレイ） */
+#guide-frame {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 28%;
+  bottom: 28%;
+  border: 4px solid #43A047;
+  border-radius: 10px;
+  pointer-events: none;
+  transition: border-color .15s;
+}
+#guide-frame.waiting { border-color: #BDBDBD; }
+#guide-frame.hit { border-color: #FFD600; }
+
+.scan-message {
+  font-size: 19px;
+  font-weight: 700;
+  color: #E65100;
+  min-height: 30px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.scan-message.wait { color: #8D6E63; }
+
+/* ボタン */
+.button-area {
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-pay {
+  width: 100%;
+  max-width: 420px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  background-color: #7CB342;
+  border: none;
+  border-radius: 14px;
+  padding: 16px 12px;
+  box-shadow: 0 5px 0 #558B2F;
+  transition: transform .08s;
+}
+.btn-pay:active { transform: translateY(4px); box-shadow: 0 1px 0 #558B2F; }
+.btn-pay:disabled { background-color: #CFD8DC; box-shadow: 0 5px 0 #B0BEC5; }
+
+.sub-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.btn-sub {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  background-color: #8D6E63;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 6px;
+  box-shadow: 0 4px 0 #5D4037;
+  transition: transform .08s;
+}
+.btn-sub:active { transform: translateY(3px); box-shadow: 0 1px 0 #5D4037; }
+.btn-sub:disabled { background-color: #D7CCC8; box-shadow: 0 4px 0 #BCAAA4; }
+
+.btn-plus { background-color: #26A69A; box-shadow: 0 4px 0 #00796B; }
+.btn-plus:active { box-shadow: 0 1px 0 #00796B; }
+
+/* ========== おかいけい画面 ========== */
+#payment-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(62, 39, 35, 0.55);
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.payment-card {
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 28px 20px;
+  text-align: center;
+  width: 100%;
+  max-width: 420px;
+}
+
+.pay-label { font-size: 20px; font-weight: 700; color: #8D6E63; margin-bottom: 6px; }
+.pay-total { font-size: 40px; font-weight: 700; color: #E65100; line-height: 1.2; }
+.pay-count { font-size: 17px; color: #A1887F; margin: 6px 0 22px; }
+
+.btn-next {
+  width: 100%;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  background-color: #43A047;
+  border: none;
+  border-radius: 14px;
+  padding: 18px 10px;
+  box-shadow: 0 5px 0 #1B5E20;
+  transition: transform .08s;
+}
+.btn-next:active { transform: translateY(4px); box-shadow: 0 1px 0 #1B5E20; }
+
+/* スキャン時のフラッシュ */
+.flash { animation: flashAnim .35s ease-out; }
+@keyframes flashAnim {
+  0% { background-color: #FFE082; }
+  100% { background-color: #fff; }
+}
+
+/* html5-qrcode の不要UIを非表示 */
+#reader__dashboard,
+#reader__header_message,
+#reader__status_span,
+#reader__dashboard_section_swaplink,
+#reader__filescan_input,
+#reader__dashboard_section_fsr { display: none !important; }
+#reader__scan_region { border: none !important; }
+#reader__scan_region img { display: none !important; }
+
+/* よこむき（低い画面）のとき */
+@media (orientation: landscape) and (max-height: 560px) {
+  .info-value { font-size: 24px; }
+  #reader { min-height: 140px; }
+  .reader-wrap { max-width: 320px; }
+  .btn-pay { font-size: 20px; padding: 12px; }
+}
 </style>
 </head>
+
 <body>
-<div id="app">
 
-  <!-- ===== スタート画面 ===== -->
-  <div id="screen-start" class="screen">
-    <div class="logo-wrap">
-      <div class="logo-icon">🛒</div>
-      <h1><ruby>読<rt>よ</rt></ruby>み<ruby>取<rt>と</rt></ruby>りごっこ</h1>
+<!-- ===== スタート画面（せんせいの せってい） ===== -->
+<div id="start-screen">
+  <h1>100<ruby>均<rt>きん</rt></ruby>レジ</h1>
+  <p class="lead">バーコードを カメラに かざすと<br>ピッと なって <ruby>金額<rt>きんがく</rt></ruby>が ふえるよ</p>
+
+  <div class="setting-card">
+    <h2>せんせいの せってい</h2>
+
+    <div class="setting-row">
+      <div class="setting-label">よみとりの ゆるさ</div>
+      <div class="choice-group" id="loose-group">
+        <button class="choice-btn" data-loose="1">きびしめ</button>
+        <button class="choice-btn selected" data-loose="2">ゆるめ</button>
+        <button class="choice-btn" data-loose="3">ゆるゆる</button>
+      </div>
+      <div class="setting-note" id="loose-note"></div>
     </div>
-    <p class="lead">
-      カメラに<ruby>商品<rt>しょうひん</rt></ruby>の<ruby>絵<rt>え</rt></ruby>や<ruby>箱<rt>はこ</rt></ruby>を<br>
-      うつすと、ねだんを<ruby>教<rt>おし</rt></ruby>えてくれるよ。
-    </p>
-    <button id="btn-start" class="big-btn">はじめる</button>
-    <button id="btn-howto" class="small-btn">つかいかた</button>
 
-    <div class="settings-panel">
-      <div class="settings-title">⚙️ <ruby>先生用<rt>せんせいよう</rt></ruby>のせってい</div>
-
-      <div class="setting-row">
-        <span class="setting-label"><ruby>音<rt>おと</rt></ruby></span>
-        <button id="toggle-sound" class="toggle on">ON</button>
+    <div class="setting-row">
+      <div class="setting-label">つぎに はんのうするまでの あいだ</div>
+      <div class="number-box">
+        <button class="step-btn" onclick="stepCooldown(-1)">▽</button>
+        <input type="text" inputmode="decimal" id="cooldown-input" value="1.8">
+        <button class="step-btn" onclick="stepCooldown(1)">△</button>
+        <span class="number-unit"><ruby>秒<rt>びょう</rt></ruby></span>
       </div>
+      <div class="setting-note">みじかいほど よく はんのうするよ。0.6〜5.0<ruby>秒<rt>びょう</rt></ruby>まで。</div>
+    </div>
 
-      <div class="setting-row">
-        <span class="setting-label"><ruby>読<rt>よ</rt></ruby>み<ruby>取<rt>と</rt></ruby>りやすさ</span>
-        <div class="num-stepper">
-          <button id="sens-down" type="button">▽</button>
-          <input id="sens-input" type="text" inputmode="numeric" value="3" readonly>
-          <button id="sens-up" type="button">△</button>
-        </div>
+    <div class="setting-row">
+      <div class="setting-label"><ruby>商品<rt>しょうひん</rt></ruby>の ねだん</div>
+      <div class="number-box">
+        <button class="step-btn" onclick="stepPrice(-1)">▽</button>
+        <input type="text" inputmode="numeric" id="price-input" value="110">
+        <button class="step-btn" onclick="stepPrice(1)">△</button>
+        <span class="number-unit"><ruby>円<rt>えん</rt></ruby></span>
       </div>
-      <div style="font-size:12px;color:var(--sub);margin-top:-6px;">
-        (1:きびしい 〜 5:とてもゆるい／どんなバーコードでも反応します)
-      </div>
+    </div>
 
-      <div class="setting-row">
-        <span class="setting-label"><ruby>連続防止<rt>れんぞくぼうし</rt></ruby>びょう<ruby>数<rt>すう</rt></ruby></span>
-        <div class="num-stepper">
-          <button id="cool-down" type="button">▽</button>
-          <input id="cool-input" type="text" inputmode="numeric" value="2" readonly>
-          <button id="cool-up" type="button">△</button>
-        </div>
+    <div class="setting-row">
+      <div class="setting-label">おと</div>
+      <div class="choice-group">
+        <button class="choice-btn selected" id="beep-btn" onclick="toggleBeep()">ピッ<ruby>音<rt>おん</rt></ruby> あり</button>
+        <button class="choice-btn selected" id="speak-btn" onclick="toggleSpeak()">よみあげ あり</button>
       </div>
     </div>
   </div>
 
-  <!-- ===== 活動画面 ===== -->
-  <div id="screen-scan" class="screen hidden">
-    <div class="camera-wrap">
-      <video id="video" playsinline autoplay muted></video>
-      <div class="scan-frame"></div>
-      <div id="status-badge" class="status-badge ready">じゅんび中</div>
-      <div id="cooldown-fill" class="cooldown-fill"></div>
-    </div>
-
-    <div id="result-card" class="result-card">
-      <div id="result-message" class="result-message">バーコードを<ruby>見<rt>み</rt></ruby>せてね</div>
-      <div id="result-sub" class="result-sub"></div>
-    </div>
-
-    <div class="controls-row">
-      <button id="btn-back" class="small-btn">もどる</button>
-      <button id="btn-sound-scan" class="small-btn">🔊 音:ON</button>
-    </div>
-  </div>
-
+  <button id="start-btn" onclick="startApp()">レジを はじめる</button>
+  <p class="setting-note" style="max-width:560px;text-align:center;margin-top:14px;">
+    カメラを つかうので、はじめに「<ruby>許可<rt>きょか</rt></ruby>」を おしてね。<br>
+    アーティファクトの プレビューでは カメラや <ruby>音<rt>おと</rt></ruby>が うごかないことが あります。GitHub Pages で ためしてね。
+  </p>
 </div>
 
-<!-- ===== 使い方モーダル ===== -->
-<div id="modal-howto" class="modal-overlay hidden">
-  <div class="modal-box">
-    <h2><ruby>使<rt>つか</rt></ruby>い<ruby>方<rt>かた</rt></ruby></h2>
-    <ol>
-      <li>「はじめる」を<ruby>押<rt>お</rt></ruby>すと、カメラがうつるよ。</li>
-      <li>バーコードや<ruby>商品<rt>しょうひん</rt></ruby>を<ruby>枠<rt>わく</rt></ruby>の<ruby>中<rt>なか</rt></ruby>に<ruby>入<rt>い</rt></ruby>れてね。</li>
-      <li>「ピッ」と<ruby>音<rt>おと</rt></ruby>がしたら、ねだんが<ruby>出<rt>で</rt></ruby>るよ。</li>
-      <li>すこし<ruby>間<rt>ま</rt></ruby>を<ruby>空<rt>あ</rt></ruby>けてから、また<ruby>次<rt>つぎ</rt></ruby>のバーコードを<ruby>見<rt>み</rt></ruby>せてね。</li>
-    </ol>
-    <div class="modal-checkbox-row">
-      <input type="checkbox" id="chk-dont-show">
-      <label for="chk-dont-show">つぎからひょうじしない</label>
+<!-- ===== メイン画面 ===== -->
+<div id="main-screen">
+  <div class="header">
+    <div class="info-box" id="total-box">
+      <div class="info-label"><ruby>合計<rt>ごうけい</rt></ruby></div>
+      <div class="info-value" id="total-display">0円</div>
     </div>
-    <button id="btn-modal-close" class="big-btn" style="align-self:center;">わかった</button>
+    <div class="info-box">
+      <div class="info-label">かず</div>
+      <div class="info-value" id="count-display">0個</div>
+    </div>
+    <button class="btn-setting" onclick="backToSetting()">せって<br>い</button>
+  </div>
+  <div class="product-bar" id="product-bar">1つ 110円の <ruby>商品<rt>しょうひん</rt></ruby></div>
+
+  <div class="scanner-area">
+    <div class="reader-wrap">
+      <div id="reader"></div>
+      <div id="guide-frame"></div>
+    </div>
+    <div class="scan-message" id="scan-msg">バーコードを かざしてね</div>
+  </div>
+
+  <div class="button-area">
+    <button class="btn-pay" id="pay-btn" onclick="showPayment()" disabled>おかいけい</button>
+    <div class="sub-row">
+      <button class="btn-sub" id="cancel-btn" onclick="cancelScan()" disabled>1つ とりけす</button>
+      <button class="btn-sub btn-plus" onclick="manualAdd()"><ruby>手<rt>て</rt></ruby>で 1つ ふやす</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== おかいけい画面 ===== -->
+<div id="payment-screen">
+  <div class="payment-card">
+    <div class="pay-label">おかいけい</div>
+    <div class="pay-total" id="pay-total">0円</div>
+    <div class="pay-count" id="pay-count">0個</div>
+    <button class="btn-next" onclick="resetApp()">ありがとう ございました</button>
   </div>
 </div>
 
 <script>
-(function(){
-  "use strict";
+/* =========================================================
+   せってい
+   ========================================================= */
+const LOOSE_PRESET = {
+  1: { stripe:false, note:'バーコードが きちんと よめたときだけ はんのうするよ。' },
+  2: { stripe:true,  minTr:14, minCon:48, needLines:2, note:'バーコードが よめなくても、しまもようが 見えたら はんのうするよ。' },
+  3: { stripe:true,  minTr:8,  minCon:26, needLines:1, note:'すこし ぶれても ななめでも はんのうするよ。バーコードじゃない ものにも はんのうすることが あります。' }
+};
 
-  /* ---------- 要素 ---------- */
-  const screenStart = document.getElementById('screen-start');
-  const screenScan = document.getElementById('screen-scan');
-  const btnStart = document.getElementById('btn-start');
-  const btnBack = document.getElementById('btn-back');
-  const btnHowto = document.getElementById('btn-howto');
-  const modalHowto = document.getElementById('modal-howto');
-  const btnModalClose = document.getElementById('btn-modal-close');
-  const chkDontShow = document.getElementById('chk-dont-show');
+const settings = {
+  loose: 2,
+  cooldown: 1.8,   // 秒
+  price: 110,
+  beep: true,
+  speak: true
+};
 
-  const toggleSound = document.getElementById('toggle-sound');
-  const btnSoundScan = document.getElementById('btn-sound-scan');
-  const sensInput = document.getElementById('sens-input');
-  const sensUp = document.getElementById('sens-up');
-  const sensDown = document.getElementById('sens-down');
-  const coolInput = document.getElementById('cool-input');
-  const coolUp = document.getElementById('cool-up');
-  const coolDown = document.getElementById('cool-down');
+/* =========================================================
+   じょうたい
+   ========================================================= */
+let totalAmount = 0;
+let scanCount = 0;
+let html5QrCode = null;
+let isScanning = false;
+let lastHitTime = 0;
+let audioCtx = null;
+let rafId = null;
+let prevTs = 0;
+let sampleAcc = 0;
+let uiAcc = 0;
+let waitingShown = false;
 
-  const video = document.getElementById('video');
-  const statusBadge = document.getElementById('status-badge');
-  const cooldownFill = document.getElementById('cooldown-fill');
-  const resultCard = document.getElementById('result-card');
-  const resultMessage = document.getElementById('result-message');
-  const resultSub = document.getElementById('result-sub');
+/* =========================================================
+   ようそ
+   ========================================================= */
+const startScreen  = document.getElementById('start-screen');
+const mainScreen   = document.getElementById('main-screen');
+const paymentScreen= document.getElementById('payment-screen');
+const totalDisplay = document.getElementById('total-display');
+const countDisplay = document.getElementById('count-display');
+const totalBox     = document.getElementById('total-box');
+const scanMsg      = document.getElementById('scan-msg');
+const payBtn       = document.getElementById('pay-btn');
+const cancelBtn    = document.getElementById('cancel-btn');
+const payTotal     = document.getElementById('pay-total');
+const payCount     = document.getElementById('pay-count');
+const guideFrame   = document.getElementById('guide-frame');
+const productBar   = document.getElementById('product-bar');
+const looseNote    = document.getElementById('loose-note');
+const cooldownInput= document.getElementById('cooldown-input');
+const priceInput   = document.getElementById('price-input');
+const beepBtn      = document.getElementById('beep-btn');
+const speakBtn     = document.getElementById('speak-btn');
 
-  /* ---------- 状態 ---------- */
-  let soundOn = true;
-  let sensitivity = 3;   // 1〜5 (大きいほどゆるい)
-  let cooldownSec = 2;   // 連続防止の秒数
-  let stream = null;
-  let zxingReady = false;
-  let rafId = null;
-  let scanning = false;
-  let inCooldown = false;
-  let successStreak = 0;   // 「ゆるさ」の判定に使う連続フレーム数
-  let lastDetectTime = 0;
-  let audioCtx = null;
-  let detecting = false;   // 検出処理の多重実行防止
-
-  // オフスクリーンcanvas(検出用にビデオフレームを描画する)
-  const detectCanvas = document.createElement('canvas');
-  const detectCtx = detectCanvas.getContext('2d', { willReadFrequently: true });
-
-  window.addEventListener('zxing-ready', ()=>{
-    zxingReady = true;
+/* =========================================================
+   せってい UI
+   ========================================================= */
+document.querySelectorAll('#loose-group .choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    settings.loose = parseInt(btn.dataset.loose, 10);
+    document.querySelectorAll('#loose-group .choice-btn')
+      .forEach(b => b.classList.toggle('selected', b === btn));
+    looseNote.textContent = LOOSE_PRESET[settings.loose].note;
   });
+});
+looseNote.textContent = LOOSE_PRESET[settings.loose].note;
 
-  /* localStorage は GitHub Pages 上でのみ動作します(プレビューでは保存されません) */
-  function loadPrefs(){
-    try{
-      const dontShow = localStorage.getItem('barcode-howto-hide');
-      if(dontShow === '1'){
-        modalShownOnce = true;
+function stepCooldown(dir) {
+  let v = parseFloat(cooldownInput.value);
+  if (isNaN(v)) v = 1.8;
+  v = Math.round((v + dir * 0.2) * 10) / 10;
+  v = Math.min(5.0, Math.max(0.6, v));
+  settings.cooldown = v;
+  cooldownInput.value = v.toFixed(1);
+}
+cooldownInput.addEventListener('change', () => {
+  let v = parseFloat(cooldownInput.value);
+  if (isNaN(v)) v = 1.8;
+  v = Math.min(5.0, Math.max(0.6, Math.round(v * 10) / 10));
+  settings.cooldown = v;
+  cooldownInput.value = v.toFixed(1);
+});
+
+function stepPrice(dir) {
+  let v = parseInt(priceInput.value, 10);
+  if (isNaN(v)) v = 110;
+  v = v + dir * 10;
+  v = Math.min(9990, Math.max(10, v));
+  settings.price = v;
+  priceInput.value = v;
+}
+priceInput.addEventListener('change', () => {
+  let v = parseInt(priceInput.value, 10);
+  if (isNaN(v)) v = 110;
+  v = Math.min(9990, Math.max(10, v));
+  settings.price = v;
+  priceInput.value = v;
+});
+
+function toggleBeep() {
+  settings.beep = !settings.beep;
+  beepBtn.classList.toggle('selected', settings.beep);
+  beepBtn.innerHTML = settings.beep
+    ? 'ピッ<ruby>音<rt>おん</rt></ruby> あり' : 'ピッ<ruby>音<rt>おん</rt></ruby> なし';
+}
+function toggleSpeak() {
+  settings.speak = !settings.speak;
+  speakBtn.classList.toggle('selected', settings.speak);
+  speakBtn.textContent = settings.speak ? 'よみあげ あり' : 'よみあげ なし';
+}
+
+/* =========================================================
+   アプリ かいし
+   ========================================================= */
+async function startApp() {
+  // 入力欄の値を確定
+  cooldownInput.dispatchEvent(new Event('change'));
+  priceInput.dispatchEvent(new Event('change'));
+
+  // 音の準備（iOSはユーザー操作の中で作る）
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    playBeep(0.01);
+  } catch (e) { console.warn('AudioContext:', e); }
+
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    speechSynthesis.speak(u);
+  } catch (e) { console.warn('Speech:', e); }
+
+  productBar.innerHTML = '1つ ' + settings.price + '円の <ruby>商品<rt>しょうひん</rt></ruby>';
+
+  startScreen.style.display = 'none';
+  mainScreen.style.display = 'flex';
+
+  await startScanner();
+  startLoop();
+}
+
+function backToSetting() {
+  stopLoop();
+  stopScanner();
+  paymentScreen.style.display = 'none';
+  mainScreen.style.display = 'none';
+  startScreen.style.display = 'flex';
+}
+
+/* =========================================================
+   スキャナー
+   ========================================================= */
+async function startScanner() {
+  await stopScanner();
+
+  try {
+    html5QrCode = new Html5Qrcode('reader', { verbose: false });
+  } catch (e) {
+    scanMsg.textContent = 'カメラの じゅんびが できませんでした';
+    return;
+  }
+
+  // ゆるく読むための設定
+  // ・qrbox を指定しない → 画面ぜんたいから さがす
+  // ・formatsToSupport を指定しない → ぜんぶの しゅるいを ためす
+  // ・fps を上げる → ぶれても あたるフレームが ふえる
+  const config = {
+    fps: 20,
+    disableFlip: false,
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+  };
+
+  const camConstraints = {
+    facingMode: 'environment',
+    width: { ideal: 1280 },
+    height: { ideal: 720 }
+  };
+
+  try {
+    await html5QrCode.start(camConstraints, config, onDecodeSuccess, () => {});
+    isScanning = true;
+    setMessage('バーコードを かざしてね', false);
+    applyFocusHint();
+  } catch (err) {
+    console.error('カメラ:', err);
+    isScanning = false;
+    setMessage('カメラが つかえないよ。<ruby>手<rt>て</rt></ruby>で 1つ ふやす ボタンを つかってね', false);
+  }
+}
+
+async function stopScanner() {
+  if (html5QrCode) {
+    try { if (isScanning) await html5QrCode.stop(); } catch (e) {}
+    try { html5QrCode.clear(); } catch (e) {}
+  }
+  isScanning = false;
+}
+
+// 連続オートフォーカスを おねがいする（できる端末だけ）
+function applyFocusHint() {
+  try {
+    const v = document.querySelector('#reader video');
+    const track = v && v.srcObject && v.srcObject.getVideoTracks
+      ? v.srcObject.getVideoTracks()[0] : null;
+    if (track && track.applyConstraints) {
+      track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+    }
+  } catch (e) {}
+}
+
+/* =========================================================
+   バーコードが よめたとき
+   ========================================================= */
+function onDecodeSuccess(decodedText) {
+  registerHit();
+}
+
+/* =========================================================
+   しまもよう けんしゅつ（ゆるゆるの本体）
+   映像の中央あたりを 小さなcanvasに うつして、
+   白と黒の きりかわり回数を かぞえる。
+   ========================================================= */
+const detCanvas = document.createElement('canvas');
+detCanvas.width = 240;
+detCanvas.height = 150;
+const detCtx = detCanvas.getContext('2d', { willReadFrequently: true });
+
+function checkStripes() {
+  const preset = LOOSE_PRESET[settings.loose];
+  if (!preset.stripe) return false;
+
+  const v = document.querySelector('#reader video');
+  if (!v || v.readyState < 2 || !v.videoWidth) return false;
+
+  const vw = v.videoWidth, vh = v.videoHeight;
+  const sx = vw * 0.08, sw = vw * 0.84;
+  const sy = vh * 0.28, sh = vh * 0.44;
+
+  try {
+    detCtx.drawImage(v, sx, sy, sw, sh, 0, 0, detCanvas.width, detCanvas.height);
+  } catch (e) { return false; }
+
+  let data;
+  try {
+    data = detCtx.getImageData(0, 0, detCanvas.width, detCanvas.height).data;
+  } catch (e) { return false; }
+
+  const W = detCanvas.width, H = detCanvas.height;
+  const LINES = 6;
+  let hitLines = 0;
+
+  for (let li = 1; li <= LINES; li++) {
+    const y = Math.floor(H * li / (LINES + 1));
+    const row = new Float32Array(W);
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      row[x] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    }
+    // かるく ぼかす（ノイズよけ）
+    const g = new Float32Array(W);
+    for (let x = 0; x < W; x++) {
+      const a = row[Math.max(0, x - 1)], b = row[x], c = row[Math.min(W - 1, x + 1)];
+      g[x] = (a + b + c) / 3;
+    }
+    let min = 255, max = 0;
+    for (let x = 0; x < W; x++) { if (g[x] < min) min = g[x]; if (g[x] > max) max = g[x]; }
+    const contrast = max - min;
+    if (contrast < preset.minCon) continue;
+
+    const mid = (min + max) / 2;
+    const hyst = contrast * 0.15;
+    let state = g[0] > mid ? 1 : 0;
+    let transitions = 0;
+    for (let x = 1; x < W; x++) {
+      if (state === 1 && g[x] < mid - hyst) { state = 0; transitions++; }
+      else if (state === 0 && g[x] > mid + hyst) { state = 1; transitions++; }
+    }
+    if (transitions >= preset.minTr) hitLines++;
+    if (hitLines >= preset.needLines) return true;
+  }
+  return false;
+}
+
+/* =========================================================
+   はんのう（よめたとき・しまを見つけたとき 共通）
+   ========================================================= */
+function registerHit() {
+  const now = performance.now();
+  if (now - lastHitTime < settings.cooldown * 1000) return;   // 間隔をあける
+  lastHitTime = now;
+
+  scanCount++;
+  totalAmount += settings.price;
+  updateDisplay();
+
+  setMessage(scanCount + 'つめ　ピッ！　' + settings.price + '円', false);
+  guideFrame.classList.add('hit');
+  waitingShown = false;
+
+  flashTotal();
+  playBeep(0.3);
+  speak(settings.price + '円');
+}
+
+function manualAdd() {
+  scanCount++;
+  totalAmount += settings.price;
+  lastHitTime = performance.now();
+  updateDisplay();
+  setMessage(scanCount + 'つめ　ふえたよ　' + settings.price + '円', false);
+  guideFrame.classList.add('hit');
+  waitingShown = false;
+  flashTotal();
+  playBeep(0.3);
+  speak(settings.price + '円');
+}
+
+function cancelScan() {
+  if (scanCount <= 0) return;
+  scanCount--;
+  totalAmount = Math.max(0, totalAmount - settings.price);
+  lastHitTime = performance.now();
+  updateDisplay();
+  setMessage(scanCount === 0 ? 'バーコードを かざしてね' : '1つ とりけしたよ', false);
+  flashTotal();
+}
+
+function updateDisplay() {
+  totalDisplay.textContent = totalAmount.toLocaleString() + '円';
+  countDisplay.textContent = scanCount + '個';
+  payBtn.disabled = scanCount === 0;
+  cancelBtn.disabled = scanCount === 0;
+}
+
+function flashTotal() {
+  totalBox.classList.remove('flash');
+  void totalBox.offsetWidth;
+  totalBox.classList.add('flash');
+}
+
+function setMessage(html, isWait) {
+  scanMsg.innerHTML = html;
+  scanMsg.classList.toggle('wait', !!isWait);
+}
+
+/* =========================================================
+   ループ（デルタタイム方式）
+   ========================================================= */
+function startLoop() {
+  stopLoop();
+  prevTs = 0; sampleAcc = 0; uiAcc = 0;
+  rafId = requestAnimationFrame(loop);
+}
+function stopLoop() {
+  if (rafId !== null) cancelAnimationFrame(rafId);
+  rafId = null;
+}
+
+function loop(ts) {
+  const dt = prevTs ? (ts - prevTs) : 0;
+  prevTs = ts;
+  sampleAcc += dt;
+  uiAcc += dt;
+
+  const now = ts;
+  const inCooldown = (now - lastHitTime) < settings.cooldown * 1000;
+
+  // しまもよう しらべ（120msごと）
+  if (sampleAcc >= 120) {
+    sampleAcc = 0;
+    if (isScanning && !inCooldown) {
+      if (checkStripes()) registerHit();
+    }
+  }
+
+  // 見た目の きりかえ（150msごと）
+  if (uiAcc >= 150) {
+    uiAcc = 0;
+    const stillCooling = (now - lastHitTime) < settings.cooldown * 1000;
+    if (stillCooling) {
+      guideFrame.classList.add('waiting');
+      if (!waitingShown && (now - lastHitTime) > 450) {
+        waitingShown = true;
+        setMessage('ちょっと まってね', true);
       }
-    }catch(e){ /* noop */ }
-  }
-  let modalShownOnce = false;
-  loadPrefs();
-
-  /* ---------- 設定UI ---------- */
-  toggleSound.addEventListener('click', ()=>{
-    soundOn = !soundOn;
-    syncSoundUI();
-  });
-  btnSoundScan.addEventListener('click', ()=>{
-    soundOn = !soundOn;
-    syncSoundUI();
-  });
-  function syncSoundUI(){
-    toggleSound.textContent = soundOn ? 'ON' : 'OFF';
-    toggleSound.classList.toggle('on', soundOn);
-    btnSoundScan.textContent = soundOn ? '🔊 音:ON' : '🔇 音:OFF';
-  }
-
-  sensUp.addEventListener('click', ()=>{
-    sensitivity = Math.min(5, sensitivity+1);
-    sensInput.value = sensitivity;
-  });
-  sensDown.addEventListener('click', ()=>{
-    sensitivity = Math.max(1, sensitivity-1);
-    sensInput.value = sensitivity;
-  });
-  coolUp.addEventListener('click', ()=>{
-    cooldownSec = Math.min(10, cooldownSec+1);
-    coolInput.value = cooldownSec;
-  });
-  coolDown.addEventListener('click', ()=>{
-    cooldownSec = Math.max(1, cooldownSec-1);
-    coolInput.value = cooldownSec;
-  });
-
-  /* ---------- 使い方モーダル ---------- */
-  function showHowto(){
-    modalHowto.classList.remove('hidden');
-  }
-  function hideHowto(){
-    modalHowto.classList.add('hidden');
-  }
-  btnHowto.addEventListener('click', showHowto);
-  btnModalClose.addEventListener('click', ()=>{
-    if(chkDontShow.checked){
-      try{ localStorage.setItem('barcode-howto-hide','1'); }catch(e){}
-    }
-    hideHowto();
-  });
-
-  /* ---------- 効果音(Web Audio API / ON-OFF可) ---------- */
-  function ensureAudioCtx(){
-    if(!audioCtx){
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if(AC) audioCtx = new AC();
-    }
-    if(audioCtx && audioCtx.state === 'suspended'){
-      audioCtx.resume();
+    } else {
+      guideFrame.classList.remove('waiting');
+      guideFrame.classList.remove('hit');
+      if (waitingShown) {
+        waitingShown = false;
+        setMessage('つぎの バーコードを かざしてね', false);
+      }
     }
   }
-  function playBeep(){
-    if(!soundOn) return;
-    ensureAudioCtx();
-    if(!audioCtx) return;
+
+  rafId = requestAnimationFrame(loop);
+}
+
+/* =========================================================
+   おと
+   ========================================================= */
+function playBeep(volume) {
+  if (!settings.beep || !audioCtx) return;
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.28, audioCtx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.2);
-  }
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1800, audioCtx.currentTime);
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.16);
+  } catch (e) {}
+}
 
-  /* ---------- 音声読み上げ(ひゃくじゅうえんです) ---------- */
-  function speakPrice(){
-    if(!soundOn) return;
-    if(!('speechSynthesis' in window)) return;
-    try{
-      const utter = new SpeechSynthesisUtterance('ひゃくじゅうえんです');
-      utter.lang = 'ja-JP';
-      utter.rate = 0.95;
-      utter.pitch = 1.0;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utter);
-    }catch(e){ /* noop */ }
-  }
+function speak(text) {
+  if (!settings.speak) return;
+  try {
+    speechSynthesis.cancel();   // かさならないように いったん とめる
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = 1.0;
+    u.volume = 1.0;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
 
-  /* ---------- 画面遷移 ---------- */
-  btnStart.addEventListener('click', ()=>{
-    ensureAudioCtx();
-    if(!modalShownOnce){
-      showHowto();
-      modalShownOnce = true;
-    }
-    screenStart.classList.add('hidden');
-    screenScan.classList.remove('hidden');
-    startCamera();
-  });
+/* =========================================================
+   おかいけい
+   ========================================================= */
+async function showPayment() {
+  stopLoop();
+  await stopScanner();
 
-  btnBack.addEventListener('click', ()=>{
-    stopCamera();
-    screenScan.classList.add('hidden');
-    screenStart.classList.remove('hidden');
-    resetResult();
-  });
+  payTotal.textContent = totalAmount.toLocaleString() + '円';
+  payCount.textContent = scanCount + '個の おかいもの';
+  paymentScreen.style.display = 'flex';
 
-  function resetResult(){
-    resultMessage.textContent = 'バーコードを見せてね';
-    resultSub.textContent = '';
-    resultCard.classList.remove('flash');
-    setStatus('ready', 'じゅんび中');
-    cooldownFill.style.width = '0%';
-  }
+  speak('ごうけい ' + totalAmount + '円です');
+}
 
-  function setStatus(kind, text){
-    statusBadge.className = 'status-badge ' + kind;
-    statusBadge.textContent = text;
-  }
+async function resetApp() {
+  speak('ありがとうございました');
 
-  /* ---------- カメラ ---------- */
-  async function startCamera(){
-    resetResult();
-    try{
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false
-      });
-      video.srcObject = stream;
-      await video.play();
-      scanning = true;
-      successStreak = 0;
-      lastDetectTime = 0;
-      setStatus('ready', zxingReady ? 'じゅんび中' : 'よみこみ中…');
-      rafId = requestAnimationFrame(scanLoop);
-    }catch(err){
-      screenScan.querySelector('.camera-wrap').innerHTML =
-        '<div class="camera-error">カメラが使えなかったよ。<br>ブラウザのせっていでカメラを許可してね。</div>';
-    }
-  }
+  totalAmount = 0;
+  scanCount = 0;
+  lastHitTime = 0;
+  waitingShown = false;
 
-  function stopCamera(){
-    scanning = false;
-    if(rafId) cancelAnimationFrame(rafId);
-    if(stream){
-      stream.getTracks().forEach(t=>t.stop());
-      stream = null;
-    }
-  }
+  updateDisplay();
+  setMessage('バーコードを かざしてね', false);
+  guideFrame.classList.remove('waiting');
+  guideFrame.classList.remove('hit');
 
-  /* ---------- 検出ループ ----------
-     「わざと制度をゆるく」: sensitivity が高いほど、
-     ・必要な連続検出フレーム数を減らす
-     ・検出成功とみなす閾値を下げる
-     ・検出APIが何かを見つけたらほぼ即成功にする
-     揺れ/斜め/ピンボケでも、フレームのどこかで一瞬でも
-     読めれば成功にすることで「おもちゃ感」を出す。
-  ------------------------------------------------------ */
-  const REQUIRED_STREAK_BY_SENS = {1:4, 2:3, 3:2, 4:1, 5:1};
+  paymentScreen.style.display = 'none';
 
-  async function scanLoop(ts){
-    if(!scanning) return;
+  await startScanner();
+  startLoop();
+}
 
-    if(inCooldown || !zxingReady || detecting){
-      rafId = requestAnimationFrame(scanLoop);
-      return;
-    }
-
-    // 検出は毎フレームやると重いので間引く(約200msごと)
-    if(!lastDetectTime || ts - lastDetectTime > 200){
-      lastDetectTime = ts;
-      tryDetect();
-    }
-
-    rafId = requestAnimationFrame(scanLoop);
-  }
-
-  async function tryDetect(){
-    if(!window.__zxing || video.readyState < 2 || video.videoWidth === 0) return;
-    detecting = true;
-    try{
-      // ビデオフレームをオフスクリーンcanvasに描画
-      // (縮小して描画すると軽くなり、多少ボケていても検出しやすい)
-      const targetW = 480;
-      const scale = targetW / video.videoWidth;
-      const w = targetW;
-      const h = Math.round(video.videoHeight * scale);
-      detectCanvas.width = w;
-      detectCanvas.height = h;
-      detectCtx.drawImage(video, 0, 0, w, h);
-      const imageData = detectCtx.getImageData(0, 0, w, h);
-
-      // ゆるさレベルに応じて試行回数(角度違いなど)を変える
-      const tryHarder = sensitivity >= 3;
-
-      const results = await window.__zxing.readBarcodesFromImageData(imageData, {
-        tryHarder: tryHarder,
-        formats: ["EAN-13","EAN-8","UPC-A","UPC-E","Code128","Code39","QRCode"],
-        maxNumberOfSymbols: 1
-      });
-
-      if(results && results.length > 0){
-        successStreak++;
-        setStatus('scanning', 'よみとり中…');
-        const need = REQUIRED_STREAK_BY_SENS[sensitivity] || 2;
-        if(successStreak >= need){
-          onScanSuccess();
-        }
-      } else {
-        successStreak = Math.max(0, successStreak - 1);
-        if(successStreak === 0) setStatus('ready', 'じゅんび中');
-      }
-    }catch(e){
-      successStreak = Math.max(0, successStreak - 1);
-    } finally {
-      detecting = false;
-    }
-  }
-
-  function onScanSuccess(){
-    successStreak = 0;
-    setStatus('success', 'ピッ！');
-    playBeep();
-    speakPrice();
-
-    resultMessage.textContent = 'ひゃくじゅうえんです';
-    resultSub.textContent = '¥110';
-    resultCard.classList.remove('flash');
-    void resultCard.offsetWidth; // reflow でアニメ再生
-    resultCard.classList.add('flash');
-
-    startCooldown();
-  }
-
-  /* ---------- クールダウン(連続で鳴り続けない) ---------- */
-  function startCooldown(){
-    inCooldown = true;
-    const totalMs = cooldownSec * 1000;
-    const startTime = performance.now();
-
-    function step(now){
-      const elapsed = now - startTime;
-      const pct = Math.min(100, (elapsed/totalMs)*100);
-      cooldownFill.style.width = pct + '%';
-      if(elapsed < totalMs){
-        requestAnimationFrame(step);
-      } else {
-        inCooldown = false;
-        cooldownFill.style.width = '0%';
-        setStatus('ready', 'じゅんび中');
-      }
-    }
-    requestAnimationFrame(step);
-  }
-
-  /* ---------- 初期化 ---------- */
-  syncSoundUI();
-
-})();
+/* ダブルタップズームよけ */
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
 </script>
+
 </body>
 </html>

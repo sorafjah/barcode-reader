@@ -7,7 +7,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@undecaf/barcode-detector-polyfill@0.9.20/dist/index.js"></script>
+<script type="module">
+  import { readBarcodesFromImageData, prepareZXingModule } from "https://cdn.jsdelivr.net/npm/zxing-wasm@2.1.0/dist/reader/index.js";
+  prepareZXingModule({
+    overrides: {
+      locateFile: (path, prefix) => {
+        if (path.endsWith(".wasm")) {
+          return "https://cdn.jsdelivr.net/npm/zxing-wasm@2.1.0/dist/reader/" + path;
+        }
+        return prefix + path;
+      }
+    }
+  });
+  window.__zxing = { readBarcodesFromImageData };
+  window.dispatchEvent(new Event('zxing-ready'));
+</script>
 <style>
   :root{
     --bg:#fef9ef;
@@ -447,13 +461,22 @@
   let sensitivity = 3;   // 1〜5 (大きいほどゆるい)
   let cooldownSec = 2;   // 連続防止の秒数
   let stream = null;
-  let detector = null;
+  let zxingReady = false;
   let rafId = null;
   let scanning = false;
   let inCooldown = false;
   let successStreak = 0;   // 「ゆるさ」の判定に使う連続フレーム数
   let lastDetectTime = 0;
   let audioCtx = null;
+  let detecting = false;   // 検出処理の多重実行防止
+
+  // オフスクリーンcanvas(検出用にビデオフレームを描画する)
+  const detectCanvas = document.createElement('canvas');
+  const detectCtx = detectCanvas.getContext('2d', { willReadFrequently: true });
+
+  window.addEventListener('zxing-ready', ()=>{
+    zxingReady = true;
+  });
 
   /* localStorage は GitHub Pages 上でのみ動作します(プレビューでは保存されません) */
   function loadPrefs(){
@@ -596,10 +619,10 @@
       });
       video.srcObject = stream;
       await video.play();
-      setupDetector();
       scanning = true;
       successStreak = 0;
       lastDetectTime = 0;
+      setStatus('ready', zxingReady ? 'じゅんび中' : 'よみこみ中…');
       rafId = requestAnimationFrame(scanLoop);
     }catch(err){
       screenScan.querySelector('.camera-wrap').innerHTML =
@@ -616,29 +639,6 @@
     }
   }
 
-  /* ---------- バーコード検出器のセットアップ ----------
-     ネイティブの BarcodeDetector があれば使い、なければ
-     jsdelivr 経由のポリフィルを使う。
-  ------------------------------------------------------ */
-  function setupDetector(){
-    try{
-      if('BarcodeDetector' in window){
-        detector = new BarcodeDetector({
-          formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']
-        });
-      } else if(window.BarcodeDetectorPolyfill){
-        window.BarcodeDetectorPolyfill.setZBarWasmURL(
-          'https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.16/dist/zbar.wasm'
-        );
-        detector = new window.BarcodeDetectorPolyfill({
-          formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']
-        });
-      }
-    }catch(e){
-      detector = null;
-    }
-  }
-
   /* ---------- 検出ループ ----------
      「わざと制度をゆるく」: sensitivity が高いほど、
      ・必要な連続検出フレーム数を減らす
@@ -652,25 +652,45 @@
   async function scanLoop(ts){
     if(!scanning) return;
 
-    if(inCooldown){
+    if(inCooldown || !zxingReady || detecting){
       rafId = requestAnimationFrame(scanLoop);
       return;
     }
 
-    // 検出は毎フレームやると重いので間引く(約150msごと)
-    if(!lastDetectTime || ts - lastDetectTime > 150){
+    // 検出は毎フレームやると重いので間引く(約200msごと)
+    if(!lastDetectTime || ts - lastDetectTime > 200){
       lastDetectTime = ts;
-      await tryDetect();
+      tryDetect();
     }
 
     rafId = requestAnimationFrame(scanLoop);
   }
 
   async function tryDetect(){
-    if(!detector || video.readyState < 2) return;
+    if(!window.__zxing || video.readyState < 2 || video.videoWidth === 0) return;
+    detecting = true;
     try{
-      const codes = await detector.detect(video);
-      if(codes && codes.length > 0){
+      // ビデオフレームをオフスクリーンcanvasに描画
+      // (縮小して描画すると軽くなり、多少ボケていても検出しやすい)
+      const targetW = 480;
+      const scale = targetW / video.videoWidth;
+      const w = targetW;
+      const h = Math.round(video.videoHeight * scale);
+      detectCanvas.width = w;
+      detectCanvas.height = h;
+      detectCtx.drawImage(video, 0, 0, w, h);
+      const imageData = detectCtx.getImageData(0, 0, w, h);
+
+      // ゆるさレベルに応じて試行回数(角度違いなど)を変える
+      const tryHarder = sensitivity >= 3;
+
+      const results = await window.__zxing.readBarcodesFromImageData(imageData, {
+        tryHarder: tryHarder,
+        formats: ["EAN-13","EAN-8","UPC-A","UPC-E","Code128","Code39","QRCode"],
+        maxNumberOfSymbols: 1
+      });
+
+      if(results && results.length > 0){
         successStreak++;
         setStatus('scanning', 'よみとり中…');
         const need = REQUIRED_STREAK_BY_SENS[sensitivity] || 2;
@@ -678,16 +698,13 @@
           onScanSuccess();
         }
       } else {
-        // ゆるさレベル5のときは、検出器が空振りでも
-        // 明るさ/コントラストの変化だけで「反応した感」を
-        // 出したいところだが、誤反応を避けるため、
-        // ここでは純粋にストリークをリセットするに留める。
         successStreak = Math.max(0, successStreak - 1);
         if(successStreak === 0) setStatus('ready', 'じゅんび中');
       }
     }catch(e){
-      // 検出エラーはよくある(認識できないフレーム)ので無視
       successStreak = Math.max(0, successStreak - 1);
+    } finally {
+      detecting = false;
     }
   }
 

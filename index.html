@@ -213,19 +213,6 @@ button {
 }
 .btn-retry:active { transform: translateY(3px); box-shadow: 0 1px 0 #1565C0; }
 
-.btn-nocam {
-  flex: 1 1 150px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-  background-color: #8D6E63;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 8px;
-  box-shadow: 0 4px 0 #5D4037;
-}
-.btn-nocam:active { transform: translateY(3px); box-shadow: 0 1px 0 #5D4037; }
-
 /* ========== メイン画面 ========== */
 #main-screen {
   display: none;
@@ -349,15 +336,6 @@ button {
 }
 #retry-cam-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #1565C0; }
 
-.big-icon {
-  font-size: 22px;
-  font-weight: 700;
-  color: #8D6E63;
-  text-align: center;
-  padding: 24px 12px;
-  line-height: 1.8;
-}
-
 .button-area {
   padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
   display: flex;
@@ -471,7 +449,6 @@ button {
 <!-- ===== スタート画面 ===== -->
 <div id="start-screen">
   <h1>100<ruby>均<rt>きん</rt></ruby>レジ</h1>
-  <p class="lead">バーコードを カメラに かざすと<br>ピッと なって <ruby>金額<rt>きんがく</rt></ruby>が ふえるよ</p>
 
   <div id="camera-card">
     <h2>カメラの ようす</h2>
@@ -479,7 +456,6 @@ button {
     <div id="camera-help"></div>
     <div class="help-row">
       <button class="btn-retry" onclick="retryCamera()">カメラを もういちど</button>
-      <button class="btn-nocam" onclick="startWithoutCamera()">カメラなしで つかう</button>
     </div>
   </div>
 
@@ -509,11 +485,36 @@ button {
 
     <div class="setting-row">
       <div class="setting-label"><ruby>商品<rt>しょうひん</rt></ruby>の ねだん</div>
-      <div class="number-box">
-        <button class="step-btn" onclick="stepPrice(-1)">▽</button>
-        <input type="text" inputmode="numeric" id="price-input" value="110">
-        <button class="step-btn" onclick="stepPrice(1)">△</button>
-        <span class="number-unit"><ruby>円<rt>えん</rt></ruby></span>
+      <div class="choice-group" id="pricemode-group">
+        <button class="choice-btn selected" data-pricemode="fixed">きまった ねだん</button>
+        <button class="choice-btn" data-pricemode="random">ランダム</button>
+      </div>
+
+      <div id="fixed-price-box" style="margin-top:10px;">
+        <div class="number-box">
+          <button class="step-btn" onclick="stepPrice(-1)">▽</button>
+          <input type="text" inputmode="numeric" id="price-input" value="110">
+          <button class="step-btn" onclick="stepPrice(1)">△</button>
+          <span class="number-unit"><ruby>円<rt>えん</rt></ruby></span>
+        </div>
+      </div>
+
+      <div id="random-price-box" style="margin-top:10px; display:none;">
+        <div class="setting-label" style="font-size:14px; margin-bottom:4px;">いちばん やすい ねだん</div>
+        <div class="number-box">
+          <button class="step-btn" onclick="stepRandomMin(-1)">▽</button>
+          <input type="text" inputmode="numeric" id="random-min-input" value="50">
+          <button class="step-btn" onclick="stepRandomMin(1)">△</button>
+          <span class="number-unit"><ruby>円<rt>えん</rt></ruby></span>
+        </div>
+        <div class="setting-label" style="font-size:14px; margin:12px 0 4px;">いちばん たかい ねだん</div>
+        <div class="number-box">
+          <button class="step-btn" onclick="stepRandomMax(-1)">▽</button>
+          <input type="text" inputmode="numeric" id="random-max-input" value="500">
+          <button class="step-btn" onclick="stepRandomMax(1)">△</button>
+          <span class="number-unit"><ruby>円<rt>えん</rt></ruby></span>
+        </div>
+        <div class="setting-note">スキャンするたびに、この はんいから ねだんを えらぶよ。</div>
       </div>
     </div>
 
@@ -527,10 +528,6 @@ button {
   </div>
 
   <button id="start-btn" onclick="startApp()">レジを はじめる</button>
-  <p class="setting-note" style="max-width:560px;text-align:center;margin-top:14px;">
-    「レジを はじめる」を おすと カメラの <ruby>許可<rt>きょか</rt></ruby>を きいてくるよ。<br>
-    アーティファクトの プレビューでは カメラが つかえません。GitHub Pages で ためしてね。
-  </p>
 </div>
 
 <!-- ===== メイン画面 ===== -->
@@ -552,9 +549,6 @@ button {
     <div class="reader-wrap" id="reader-wrap">
       <div id="reader"></div>
       <div id="guide-frame"></div>
-    </div>
-    <div class="big-icon" id="nocam-note" style="display:none;">
-      カメラを つかわないモードだよ<br>「<ruby>手<rt>て</rt></ruby>で 1つ ふやす」を おしてね
     </div>
     <div class="scan-message" id="scan-msg">バーコードを かざしてね</div>
     <div class="err-detail" id="err-detail"></div>
@@ -590,7 +584,13 @@ const LOOSE_PRESET = {
   3: { stripe:true,  minTr:8,  minCon:26, needLines:1, note:'すこし ぶれても ななめでも はんのうするよ。バーコードじゃない ものにも はんのうすることが あります。' }
 };
 
-const settings = { loose:2, cooldown:1.8, price:110, beep:true, speak:true };
+const settings = {
+  loose:2, cooldown:1.8,
+  priceMode:'fixed',   // 'fixed' または 'random'
+  price:110,
+  randomMin:50, randomMax:500,
+  beep:true, speak:true
+};
 
 /* =========================================================
    じょうたい
@@ -599,7 +599,6 @@ let totalAmount = 0;
 let scanCount = 0;
 let html5QrCode = null;
 let isScanning = false;
-let useCamera = true;
 let lastHitTime = 0;
 let audioCtx = null;
 let rafId = null;
@@ -624,11 +623,15 @@ const payTotal     = document.getElementById('pay-total');
 const payCount     = document.getElementById('pay-count');
 const guideFrame   = document.getElementById('guide-frame');
 const readerWrap   = document.getElementById('reader-wrap');
-const nocamNote    = document.getElementById('nocam-note');
 const productBar   = document.getElementById('product-bar');
 const looseNote    = document.getElementById('loose-note');
 const cooldownInput= document.getElementById('cooldown-input');
 const priceInput   = document.getElementById('price-input');
+const pricemodeGroup = document.getElementById('pricemode-group');
+const fixedPriceBox  = document.getElementById('fixed-price-box');
+const randomPriceBox = document.getElementById('random-price-box');
+const randomMinInput = document.getElementById('random-min-input');
+const randomMaxInput = document.getElementById('random-max-input');
 const beepBtn      = document.getElementById('beep-btn');
 const speakBtn     = document.getElementById('speak-btn');
 const diagList     = document.getElementById('diag-list');
@@ -722,6 +725,67 @@ priceInput.addEventListener('change', () => {
   priceInput.value = v;
 });
 
+/* ---- 値段モード（きまった／ランダム）---- */
+document.querySelectorAll('#pricemode-group .choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    settings.priceMode = btn.dataset.pricemode;
+    document.querySelectorAll('#pricemode-group .choice-btn')
+      .forEach(b => b.classList.toggle('selected', b === btn));
+    fixedPriceBox.style.display  = (settings.priceMode === 'fixed')  ? 'block' : 'none';
+    randomPriceBox.style.display = (settings.priceMode === 'random') ? 'block' : 'none';
+  });
+});
+
+function stepRandomMin(dir) {
+  let v = parseInt(randomMinInput.value, 10);
+  if (isNaN(v)) v = 50;
+  v = Math.min(9990, Math.max(10, v + dir * 10));
+  if (v > settings.randomMax) v = settings.randomMax;
+  settings.randomMin = v;
+  randomMinInput.value = v;
+}
+randomMinInput.addEventListener('change', () => {
+  let v = parseInt(randomMinInput.value, 10);
+  if (isNaN(v)) v = 50;
+  v = Math.min(9990, Math.max(10, v));
+  if (v > settings.randomMax) v = settings.randomMax;
+  settings.randomMin = v;
+  randomMinInput.value = v;
+});
+
+function stepRandomMax(dir) {
+  let v = parseInt(randomMaxInput.value, 10);
+  if (isNaN(v)) v = 500;
+  v = Math.min(9990, Math.max(10, v + dir * 10));
+  if (v < settings.randomMin) v = settings.randomMin;
+  settings.randomMax = v;
+  randomMaxInput.value = v;
+}
+randomMaxInput.addEventListener('change', () => {
+  let v = parseInt(randomMaxInput.value, 10);
+  if (isNaN(v)) v = 500;
+  v = Math.min(9990, Math.max(10, v));
+  if (v < settings.randomMin) v = settings.randomMin;
+  settings.randomMax = v;
+  randomMaxInput.value = v;
+});
+
+// つぎに かざす 商品の ねだんを きめる（ランダムモード用）
+function drawNextPrice() {
+  if (settings.priceMode !== 'random') {
+    settings.price = clampPrice(settings.price);
+    return settings.price;
+  }
+  const min = settings.randomMin, max = settings.randomMax;
+  const amount = Math.floor(Math.random() * ((max - min) / 10 + 1)) * 10 + min;
+  settings.price = amount;
+  return amount;
+}
+
+function clampPrice(v) {
+  return Math.min(9990, Math.max(10, v));
+}
+
 function toggleBeep() {
   settings.beep = !settings.beep;
   beepBtn.classList.toggle('selected', settings.beep);
@@ -803,39 +867,23 @@ async function startApp() {
 
   if (!camOk) return;
 
-  useCamera = true;
-  await enterMainScreen();
-}
-
-async function startWithoutCamera() {
-  cooldownInput.dispatchEvent(new Event('change'));
-  priceInput.dispatchEvent(new Event('change'));
-  useCamera = false;
   await enterMainScreen();
 }
 
 async function enterMainScreen() {
   initAudio();
 
-  productBar.innerHTML = '1つ ' + settings.price + '円の <ruby>商品<rt>しょうひん</rt></ruby>';
+  drawNextPrice();
+  updateProductBar();
 
   startScreen.style.display = 'none';
   mainScreen.style.display = 'flex';
 
-  if (useCamera) {
-    readerWrap.style.display = 'block';
-    nocamNote.style.display = 'none';
-    // iOS は getUserMedia を つづけて よぶと しっぱいすることがあるので すこし まつ
-    await sleep(400);
-    await startScanner();
-    startLoop();
-  } else {
-    readerWrap.style.display = 'none';
-    nocamNote.style.display = 'block';
-    isScanning = false;
-    setMessage('ボタンで れんしゅうしよう', false);
-    startLoop();
-  }
+  readerWrap.style.display = 'block';
+  // iOS は getUserMedia を つづけて よぶと しっぱいすることがあるので すこし まつ
+  await sleep(400);
+  await startScanner();
+  startLoop();
 }
 
 function initAudio() {
@@ -1045,47 +1093,63 @@ function checkStripes() {
 /* =========================================================
    はんのう
    ========================================================= */
+let lastAddedPrice = 0; // 直前に加算した金額（とりけし用）
+
 function registerHit() {
   const now = performance.now();
   if (now - lastHitTime < settings.cooldown * 1000) return;
   lastHitTime = now;
 
+  const price = settings.price;
   scanCount++;
-  totalAmount += settings.price;
+  totalAmount += price;
+  lastAddedPrice = price;
   updateDisplay();
 
-  setMessage(scanCount + 'つめ　ピッ！　' + settings.price + '円', false);
+  setMessage(scanCount + 'つめ　ピッ！　' + price + '円', false);
   guideFrame.classList.add('hit');
   waitingShown = false;
 
   flashTotal();
   playBeep(0.3);
-  speak(priceReading(settings.price));
+  speak(priceReading(price));
+
+  drawNextPrice();
+  updateProductBar();
 }
 
 function manualAdd() {
+  const price = settings.price;
   scanCount++;
-  totalAmount += settings.price;
+  totalAmount += price;
+  lastAddedPrice = price;
   lastHitTime = performance.now();
   updateDisplay();
-  setMessage(scanCount + 'つめ　ふえたよ　' + settings.price + '円', false);
+  setMessage(scanCount + 'つめ　ふえたよ　' + price + '円', false);
   guideFrame.classList.add('hit');
   waitingShown = false;
   flashTotal();
   playBeep(0.3);
-  speak(priceReading(settings.price));
+  speak(priceReading(price));
+
+  drawNextPrice();
+  updateProductBar();
 }
 
 function cancelScan() {
   if (scanCount <= 0) return;
   scanCount--;
-  totalAmount = Math.max(0, totalAmount - settings.price);
+  totalAmount = Math.max(0, totalAmount - lastAddedPrice);
   lastHitTime = performance.now();
   updateDisplay();
   setMessage(scanCount === 0
-    ? (useCamera ? 'バーコードを かざしてね' : 'ボタンで れんしゅうしよう')
+    ? 'バーコードを かざしてね'
     : '1つ とりけしたよ', false);
   flashTotal();
+}
+
+function updateProductBar() {
+  productBar.innerHTML = '1つ ' + settings.price + '円の <ruby>商品<rt>しょうひん</rt></ruby>';
 }
 
 function updateDisplay() {
@@ -1129,7 +1193,7 @@ function loop(ts) {
 
   if (sampleAcc >= 120) {
     sampleAcc = 0;
-    if (useCamera && isScanning && !inCooldown) {
+    if (isScanning && !inCooldown) {
       if (checkStripes()) registerHit();
     }
   }
@@ -1148,7 +1212,7 @@ function loop(ts) {
       guideFrame.classList.remove('hit');
       if (waitingShown) {
         waitingShown = false;
-        setMessage(useCamera ? 'つぎの バーコードを かざしてね' : 'つぎを おしてね', false);
+        setMessage('つぎの バーコードを かざしてね', false);
       }
     }
   }
@@ -1250,7 +1314,7 @@ function speak(text) {
    ========================================================= */
 async function showPayment() {
   stopLoop();
-  if (useCamera) await stopScanner();
+  await stopScanner();
 
   payTotal.textContent = totalAmount.toLocaleString() + '円';
   payCount.textContent = scanCount + '個の おかいもの';
@@ -1265,19 +1329,20 @@ async function resetApp() {
   totalAmount = 0;
   scanCount = 0;
   lastHitTime = 0;
+  lastAddedPrice = 0;
   waitingShown = false;
 
+  drawNextPrice();
+  updateProductBar();
   updateDisplay();
-  setMessage(useCamera ? 'バーコードを かざしてね' : 'ボタンで れんしゅうしよう', false);
+  setMessage('バーコードを かざしてね', false);
   guideFrame.classList.remove('waiting');
   guideFrame.classList.remove('hit');
 
   paymentScreen.style.display = 'none';
 
-  if (useCamera) {
-    await sleep(300);
-    await startScanner();
-  }
+  await sleep(300);
+  await startScanner();
   startLoop();
 }
 

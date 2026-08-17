@@ -62,6 +62,20 @@ button {
   line-height: 1.7;
 }
 
+.setting-toggle-btn {
+  width: 100%;
+  max-width: 560px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #E65100;
+  background-color: #FFF3E0;
+  border: 3px solid #FFCC80;
+  border-radius: 14px;
+  padding: 14px 12px;
+  margin-bottom: 16px;
+}
+.setting-toggle-btn:active { background-color: #FFE0B2; }
+
 .setting-card {
   width: 100%;
   max-width: 560px;
@@ -459,7 +473,9 @@ button {
     </div>
   </div>
 
-  <div class="setting-card">
+  <button id="toggle-setting-btn" class="setting-toggle-btn" onclick="toggleSettingCard()">⚙️ せんせいの せってい</button>
+
+  <div class="setting-card" id="setting-card" style="display:none;">
     <h2>せんせいの せってい</h2>
 
     <div class="setting-row">
@@ -636,6 +652,7 @@ const beepBtn      = document.getElementById('beep-btn');
 const speakBtn     = document.getElementById('speak-btn');
 const diagList     = document.getElementById('diag-list');
 const cameraHelp   = document.getElementById('camera-help');
+const toggleSettingBtn = document.getElementById('toggle-setting-btn');
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -680,6 +697,13 @@ function hideHelp() { cameraHelp.style.display = 'none'; }
       + '<b>べつのタブで ひらく</b>か、GitHub Pages で ためしてね。');
   }
 })();
+
+function toggleSettingCard() {
+  const card = document.getElementById('setting-card');
+  const isOpen = card.style.display !== 'none';
+  card.style.display = isOpen ? 'none' : 'block';
+  toggleSettingBtn.textContent = isOpen ? '⚙️ せんせいの せってい' : '⚙️ せっていを とじる';
+}
 
 /* =========================================================
    せってい UI
@@ -797,7 +821,7 @@ function toggleSpeak() {
   speakBtn.classList.toggle('selected', settings.speak);
   speakBtn.textContent = settings.speak ? 'よみあげ あり' : 'よみあげ なし';
   if (settings.speak) {
-    initAudio();          // 音声リストが まだなら ここで さがす
+    if (!cachedJaVoice) loadJapaneseVoice();
     setTimeout(() => speak('よみあげ オン'), 150);
   }
 }
@@ -943,6 +967,10 @@ function loadJapaneseVoice() {
     if (!cachedJaVoice) console.warn('日本語の 読み上げボイスが 見つかりません');
   }, 500);
 }
+
+// ページを ひらいた じかんに、日本語の 読み上げボイスを さがしはじめる
+// （「レジを はじめる」を おすまえに、ここで じゅんびしておく）
+loadJapaneseVoice();
 
 function backToSetting() {
   stopLoop();

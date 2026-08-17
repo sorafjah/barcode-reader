@@ -12,9 +12,7 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 
 body {
   font-family: 'BIZ UDPGothic', sans-serif;
@@ -71,7 +69,7 @@ button {
   border: 3px solid #FFCC80;
   border-radius: 16px;
   padding: 14px 14px 18px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .setting-card > h2 {
@@ -82,9 +80,7 @@ button {
   border-bottom: 2px dotted #FFCC80;
 }
 
-.setting-row {
-  margin-bottom: 16px;
-}
+.setting-row { margin-bottom: 16px; }
 .setting-row:last-child { margin-bottom: 0; }
 
 .setting-label {
@@ -102,11 +98,7 @@ button {
 }
 
 /* 選択ボタン */
-.choice-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+.choice-group { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .choice-btn {
   flex: 1 1 100px;
@@ -126,12 +118,7 @@ button {
 }
 
 /* 数字＋△▽ */
-.number-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+.number-box { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .step-btn {
   font-size: 22px;
@@ -161,11 +148,7 @@ button {
   user-select: text;
 }
 
-.number-unit {
-  font-size: 16px;
-  font-weight: 700;
-  color: #795548;
-}
+.number-unit { font-size: 16px; font-weight: 700; color: #795548; }
 
 #start-btn {
   font-size: 26px;
@@ -179,6 +162,75 @@ button {
   transition: transform .08s;
 }
 #start-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #BF360C; }
+
+/* カメラ診断カード */
+#camera-card {
+  width: 100%;
+  max-width: 560px;
+  background-color: #FFFDE7;
+  border: 3px solid #FFE082;
+  border-radius: 16px;
+  padding: 12px 14px 14px;
+  margin-bottom: 16px;
+}
+
+#camera-card h2 {
+  font-size: 16px;
+  color: #F57F17;
+  margin-bottom: 8px;
+}
+
+.diag-list {
+  font-size: 13px;
+  color: #6D4C41;
+  line-height: 1.9;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.diag-list .ng { color: #C62828; font-weight: 700; }
+.diag-list .ok { color: #2E7D32; font-weight: 700; }
+
+#camera-help {
+  font-size: 14px;
+  color: #BF360C;
+  background-color: #FFEBEE;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 10px;
+  line-height: 1.7;
+  display: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.help-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+.btn-retry {
+  flex: 1 1 150px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background-color: #1E88E5;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 8px;
+  box-shadow: 0 4px 0 #1565C0;
+}
+.btn-retry:active { transform: translateY(3px); box-shadow: 0 1px 0 #1565C0; }
+
+.btn-nocam {
+  flex: 1 1 150px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background-color: #8D6E63;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 8px;
+  box-shadow: 0 4px 0 #5D4037;
+}
+.btn-nocam:active { transform: translateY(3px); box-shadow: 0 1px 0 #5D4037; }
 
 /* ========== メイン画面 ========== */
 #main-screen {
@@ -203,11 +255,7 @@ button {
   text-align: center;
 }
 
-.info-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: #A1887F;
-}
+.info-label { font-size: 13px; font-weight: 700; color: #A1887F; }
 
 .info-value {
   font-size: 30px;
@@ -263,13 +311,8 @@ button {
   min-height: 180px;
 }
 
-#reader video {
-  display: block;
-  width: 100% !important;
-  border-radius: 14px;
-}
+#reader video { display: block; width: 100% !important; border-radius: 14px; }
 
-/* 読み取り枠（自作オーバーレイ） */
 #guide-frame {
   position: absolute;
   left: 8%;
@@ -292,8 +335,16 @@ button {
   text-align: center;
   line-height: 1.4;
 }
-
 .scan-message.wait { color: #8D6E63; }
+
+.big-icon {
+  font-size: 22px;
+  font-weight: 700;
+  color: #8D6E63;
+  text-align: center;
+  padding: 24px 12px;
+  line-height: 1.8;
+}
 
 /* ボタン */
 .button-area {
@@ -320,12 +371,7 @@ button {
 .btn-pay:active { transform: translateY(4px); box-shadow: 0 1px 0 #558B2F; }
 .btn-pay:disabled { background-color: #CFD8DC; box-shadow: 0 5px 0 #B0BEC5; }
 
-.sub-row {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  max-width: 420px;
-}
+.sub-row { display: flex; gap: 8px; width: 100%; max-width: 420px; }
 
 .btn-sub {
   flex: 1;
@@ -385,14 +431,14 @@ button {
 }
 .btn-next:active { transform: translateY(4px); box-shadow: 0 1px 0 #1B5E20; }
 
-/* スキャン時のフラッシュ */
+/* フラッシュ */
 .flash { animation: flashAnim .35s ease-out; }
 @keyframes flashAnim {
   0% { background-color: #FFE082; }
   100% { background-color: #fff; }
 }
 
-/* html5-qrcode の不要UIを非表示 */
+/* html5-qrcode の不要UI */
 #reader__dashboard,
 #reader__header_message,
 #reader__status_span,
@@ -402,7 +448,6 @@ button {
 #reader__scan_region { border: none !important; }
 #reader__scan_region img { display: none !important; }
 
-/* よこむき（低い画面）のとき */
 @media (orientation: landscape) and (max-height: 560px) {
   .info-value { font-size: 24px; }
   #reader { min-height: 140px; }
@@ -414,10 +459,21 @@ button {
 
 <body>
 
-<!-- ===== スタート画面（せんせいの せってい） ===== -->
+<!-- ===== スタート画面 ===== -->
 <div id="start-screen">
   <h1>100<ruby>均<rt>きん</rt></ruby>レジ</h1>
   <p class="lead">バーコードを カメラに かざすと<br>ピッと なって <ruby>金額<rt>きんがく</rt></ruby>が ふえるよ</p>
+
+  <!-- カメラの ようす -->
+  <div id="camera-card">
+    <h2>カメラの ようす</h2>
+    <div class="diag-list" id="diag-list"></div>
+    <div id="camera-help"></div>
+    <div class="help-row">
+      <button class="btn-retry" onclick="retryCamera()">カメラを もういちど</button>
+      <button class="btn-nocam" onclick="startWithoutCamera()">カメラなしで つかう</button>
+    </div>
+  </div>
 
   <div class="setting-card">
     <h2>せんせいの せってい</h2>
@@ -464,8 +520,8 @@ button {
 
   <button id="start-btn" onclick="startApp()">レジを はじめる</button>
   <p class="setting-note" style="max-width:560px;text-align:center;margin-top:14px;">
-    カメラを つかうので、はじめに「<ruby>許可<rt>きょか</rt></ruby>」を おしてね。<br>
-    アーティファクトの プレビューでは カメラや <ruby>音<rt>おと</rt></ruby>が うごかないことが あります。GitHub Pages で ためしてね。
+    「レジを はじめる」を おすと カメラの <ruby>許可<rt>きょか</rt></ruby>を きいてくるよ。<br>
+    アーティファクトの プレビューでは カメラが つかえません。GitHub Pages で ためしてね。
   </p>
 </div>
 
@@ -485,9 +541,12 @@ button {
   <div class="product-bar" id="product-bar">1つ 110円の <ruby>商品<rt>しょうひん</rt></ruby></div>
 
   <div class="scanner-area">
-    <div class="reader-wrap">
+    <div class="reader-wrap" id="reader-wrap">
       <div id="reader"></div>
       <div id="guide-frame"></div>
+    </div>
+    <div class="big-icon" id="nocam-note" style="display:none;">
+      カメラを つかわないモードだよ<br>「<ruby>手<rt>て</rt></ruby>で 1つ ふやす」を おしてね
     </div>
     <div class="scan-message" id="scan-msg">バーコードを かざしてね</div>
   </div>
@@ -521,13 +580,7 @@ const LOOSE_PRESET = {
   3: { stripe:true,  minTr:8,  minCon:26, needLines:1, note:'すこし ぶれても ななめでも はんのうするよ。バーコードじゃない ものにも はんのうすることが あります。' }
 };
 
-const settings = {
-  loose: 2,
-  cooldown: 1.8,   // 秒
-  price: 110,
-  beep: true,
-  speak: true
-};
+const settings = { loose:2, cooldown:1.8, price:110, beep:true, speak:true };
 
 /* =========================================================
    じょうたい
@@ -536,12 +589,11 @@ let totalAmount = 0;
 let scanCount = 0;
 let html5QrCode = null;
 let isScanning = false;
+let useCamera = true;
 let lastHitTime = 0;
 let audioCtx = null;
 let rafId = null;
-let prevTs = 0;
-let sampleAcc = 0;
-let uiAcc = 0;
+let prevTs = 0, sampleAcc = 0, uiAcc = 0;
 let waitingShown = false;
 
 /* =========================================================
@@ -559,12 +611,65 @@ const cancelBtn    = document.getElementById('cancel-btn');
 const payTotal     = document.getElementById('pay-total');
 const payCount     = document.getElementById('pay-count');
 const guideFrame   = document.getElementById('guide-frame');
+const readerWrap   = document.getElementById('reader-wrap');
+const nocamNote    = document.getElementById('nocam-note');
 const productBar   = document.getElementById('product-bar');
 const looseNote    = document.getElementById('loose-note');
 const cooldownInput= document.getElementById('cooldown-input');
 const priceInput   = document.getElementById('price-input');
 const beepBtn      = document.getElementById('beep-btn');
 const speakBtn     = document.getElementById('speak-btn');
+const diagList     = document.getElementById('diag-list');
+const cameraHelp   = document.getElementById('camera-help');
+
+/* =========================================================
+   カメラの かんきょうチェック
+   ========================================================= */
+function envInfo() {
+  const inFrame = (function(){ try { return window.self !== window.top; } catch(e){ return true; } })();
+  return {
+    protocol: location.protocol.replace(':',''),
+    secure: !!window.isSecureContext,
+    hasApi: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+    inFrame: inFrame
+  };
+}
+
+function renderDiag(extra) {
+  const e = envInfo();
+  const mark = (ok) => ok ? '<span class="ok">OK</span>' : '<span class="ng">NG</span>';
+  let html = '';
+  html += 'つなぎかた：' + e.protocol + '　' + mark(e.protocol === 'https' || location.hostname === 'localhost') + '<br>';
+  html += 'あんぜんな ページ（isSecureContext）：' + mark(e.secure) + '<br>';
+  html += 'カメラのしくみ（mediaDevices）：' + mark(e.hasApi) + '<br>';
+  html += 'わくの中（iframe）で ひらいている：' + (e.inFrame ? '<span class="ng">はい</span>' : '<span class="ok">いいえ</span>');
+  if (extra) html += '<br>' + extra;
+  diagList.innerHTML = html;
+}
+
+function showHelp(msg) {
+  cameraHelp.innerHTML = msg;
+  cameraHelp.style.display = 'block';
+}
+
+function hideHelp() {
+  cameraHelp.style.display = 'none';
+}
+
+// 起動時にチェックして、あやしければ先に知らせる
+(function initDiag() {
+  const e = envInfo();
+  renderDiag();
+  if (!e.hasApi || !e.secure) {
+    showHelp('この ひらきかたでは カメラが つかえません。<br>'
+      + '・<b>https://</b> の アドレスで ひらいてね（GitHub Pages はOK）<br>'
+      + '・ファイルを ダブルクリックして ひらいた（file://）ばあいは つかえません');
+  } else if (e.inFrame) {
+    showHelp('わくの中（プレビューなど）で ひらいています。<br>'
+      + 'ここでは カメラの <ruby>許可<rt>きょか</rt></ruby>ダイアログが 出ないことが あります。'
+      + '<b>べつのタブで ひらく</b>か、GitHub Pages で ためしてね。');
+  }
+})();
 
 /* =========================================================
    せってい UI
@@ -598,8 +703,7 @@ cooldownInput.addEventListener('change', () => {
 function stepPrice(dir) {
   let v = parseInt(priceInput.value, 10);
   if (isNaN(v)) v = 110;
-  v = v + dir * 10;
-  v = Math.min(9990, Math.max(10, v));
+  v = Math.min(9990, Math.max(10, v + dir * 10));
   settings.price = v;
   priceInput.value = v;
 }
@@ -624,17 +728,123 @@ function toggleSpeak() {
 }
 
 /* =========================================================
+   カメラの きょかを もらう
+   ========================================================= */
+async function askCameraPermission() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    const err = new Error('mediaDevices がありません');
+    err.name = 'NoApiError';
+    throw err;
+  }
+  // ここで はじめて 許可ダイアログが 出る
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: 'environment' } },
+    audio: false
+  });
+  // 許可だけ もらって いったん とめる（このあと html5-qrcode が つかう）
+  stream.getTracks().forEach(t => t.stop());
+  return true;
+}
+
+function explainCameraError(err) {
+  const name = (err && err.name) ? err.name : 'Error';
+  const msg  = (err && err.message) ? err.message : '';
+  let help = '<b>カメラが つかえませんでした（' + name + '）</b><br>';
+
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    help += '・<ruby>許可<rt>きょか</rt></ruby>が ことわられています。iPadなら アドレスバーの「ぁあ」→「Webサイトの設定」→ カメラを「<ruby>許可<rt>きょか</rt></ruby>」に かえてね<br>'
+          + '・「<ruby>設定<rt>せってい</rt></ruby>」→ Safari → カメラ も かくにんしてね<br>'
+          + '・プレビューや わくの中（iframe）だと 出せないことが あります';
+  } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+    help += '・カメラが 見つかりません。ほかの<ruby>端末<rt>たんまつ</rt></ruby>で ためしてね';
+  } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+    help += '・ほかのアプリが カメラを つかっています。カメラアプリなどを とじてね';
+  } else if (name === 'NoApiError' || name === 'TypeError') {
+    help += '・https:// の アドレスで ひらいてね（file:// では つかえません）';
+  } else if (name === 'SecurityError') {
+    help += '・あんぜんな ページ（https）で ひらいてね';
+  } else {
+    help += '・' + msg;
+  }
+  showHelp(help);
+  renderDiag('エラー：<span class="ng">' + name + '</span>' + (msg ? '（' + msg + '）' : ''));
+}
+
+async function retryCamera() {
+  hideHelp();
+  renderDiag('カメラを きいています…');
+  try {
+    await askCameraPermission();
+    renderDiag('カメラ：<span class="ok">つかえます</span>');
+  } catch (err) {
+    explainCameraError(err);
+  }
+}
+
+/* =========================================================
    アプリ かいし
    ========================================================= */
 async function startApp() {
-  // 入力欄の値を確定
   cooldownInput.dispatchEvent(new Event('change'));
   priceInput.dispatchEvent(new Event('change'));
 
-  // 音の準備（iOSはユーザー操作の中で作る）
+  hideHelp();
+
+  // ① まず カメラの きょかを もらう（ここが いちばん だいじ）
+  let camOk = false;
   try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    await askCameraPermission();
+    camOk = true;
+  } catch (err) {
+    explainCameraError(err);
+    camOk = false;
+  }
+
+  if (!camOk) {
+    // 画面は うつさず、原因を 見せたまま とめる
+    return;
+  }
+
+  useCamera = true;
+  await enterMainScreen();
+}
+
+async function startWithoutCamera() {
+  cooldownInput.dispatchEvent(new Event('change'));
+  priceInput.dispatchEvent(new Event('change'));
+  useCamera = false;
+  await enterMainScreen();
+}
+
+async function enterMainScreen() {
+  // ② おとの じゅんび（カメラのあとに やる）
+  initAudio();
+
+  productBar.innerHTML = '1つ ' + settings.price + '円の <ruby>商品<rt>しょうひん</rt></ruby>';
+
+  startScreen.style.display = 'none';
+  mainScreen.style.display = 'flex';
+
+  if (useCamera) {
+    readerWrap.style.display = 'block';
+    nocamNote.style.display = 'none';
+    await startScanner();
+    startLoop();
+  } else {
+    readerWrap.style.display = 'none';
+    nocamNote.style.display = 'block';
+    isScanning = false;
+    setMessage('ボタンで れんしゅうしよう', false);
+    startLoop();
+  }
+}
+
+function initAudio() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     playBeep(0.01);
   } catch (e) { console.warn('AudioContext:', e); }
 
@@ -643,14 +853,6 @@ async function startApp() {
     u.volume = 0;
     speechSynthesis.speak(u);
   } catch (e) { console.warn('Speech:', e); }
-
-  productBar.innerHTML = '1つ ' + settings.price + '円の <ruby>商品<rt>しょうひん</rt></ruby>';
-
-  startScreen.style.display = 'none';
-  mainScreen.style.display = 'flex';
-
-  await startScanner();
-  startLoop();
 }
 
 function backToSetting() {
@@ -670,7 +872,7 @@ async function startScanner() {
   try {
     html5QrCode = new Html5Qrcode('reader', { verbose: false });
   } catch (e) {
-    scanMsg.textContent = 'カメラの じゅんびが できませんでした';
+    setMessage('カメラの じゅんびが できませんでした', false);
     return;
   }
 
@@ -698,7 +900,7 @@ async function startScanner() {
   } catch (err) {
     console.error('カメラ:', err);
     isScanning = false;
-    setMessage('カメラが つかえないよ。<ruby>手<rt>て</rt></ruby>で 1つ ふやす ボタンを つかってね', false);
+    setMessage('カメラが つかえないよ。「<ruby>手<rt>て</rt></ruby>で 1つ ふやす」を つかってね', false);
   }
 }
 
@@ -710,7 +912,6 @@ async function stopScanner() {
   isScanning = false;
 }
 
-// 連続オートフォーカスを おねがいする（できる端末だけ）
 function applyFocusHint() {
   try {
     const v = document.querySelector('#reader video');
@@ -722,17 +923,10 @@ function applyFocusHint() {
   } catch (e) {}
 }
 
-/* =========================================================
-   バーコードが よめたとき
-   ========================================================= */
-function onDecodeSuccess(decodedText) {
-  registerHit();
-}
+function onDecodeSuccess() { registerHit(); }
 
 /* =========================================================
    しまもよう けんしゅつ（ゆるゆるの本体）
-   映像の中央あたりを 小さなcanvasに うつして、
-   白と黒の きりかわり回数を かぞえる。
    ========================================================= */
 const detCanvas = document.createElement('canvas');
 detCanvas.width = 240;
@@ -770,7 +964,6 @@ function checkStripes() {
       const i = (y * W + x) * 4;
       row[x] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
     }
-    // かるく ぼかす（ノイズよけ）
     const g = new Float32Array(W);
     for (let x = 0; x < W; x++) {
       const a = row[Math.max(0, x - 1)], b = row[x], c = row[Math.min(W - 1, x + 1)];
@@ -796,11 +989,11 @@ function checkStripes() {
 }
 
 /* =========================================================
-   はんのう（よめたとき・しまを見つけたとき 共通）
+   はんのう
    ========================================================= */
 function registerHit() {
   const now = performance.now();
-  if (now - lastHitTime < settings.cooldown * 1000) return;   // 間隔をあける
+  if (now - lastHitTime < settings.cooldown * 1000) return;
   lastHitTime = now;
 
   scanCount++;
@@ -835,7 +1028,9 @@ function cancelScan() {
   totalAmount = Math.max(0, totalAmount - settings.price);
   lastHitTime = performance.now();
   updateDisplay();
-  setMessage(scanCount === 0 ? 'バーコードを かざしてね' : '1つ とりけしたよ', false);
+  setMessage(scanCount === 0
+    ? (useCamera ? 'バーコードを かざしてね' : 'ボタンで れんしゅうしよう')
+    : '1つ とりけしたよ', false);
   flashTotal();
 }
 
@@ -876,24 +1071,21 @@ function loop(ts) {
   sampleAcc += dt;
   uiAcc += dt;
 
-  const now = ts;
-  const inCooldown = (now - lastHitTime) < settings.cooldown * 1000;
+  const inCooldown = (ts - lastHitTime) < settings.cooldown * 1000;
 
-  // しまもよう しらべ（120msごと）
   if (sampleAcc >= 120) {
     sampleAcc = 0;
-    if (isScanning && !inCooldown) {
+    if (useCamera && isScanning && !inCooldown) {
       if (checkStripes()) registerHit();
     }
   }
 
-  // 見た目の きりかえ（150msごと）
   if (uiAcc >= 150) {
     uiAcc = 0;
-    const stillCooling = (now - lastHitTime) < settings.cooldown * 1000;
+    const stillCooling = (ts - lastHitTime) < settings.cooldown * 1000;
     if (stillCooling) {
       guideFrame.classList.add('waiting');
-      if (!waitingShown && (now - lastHitTime) > 450) {
+      if (!waitingShown && (ts - lastHitTime) > 450) {
         waitingShown = true;
         setMessage('ちょっと まってね', true);
       }
@@ -902,7 +1094,7 @@ function loop(ts) {
       guideFrame.classList.remove('hit');
       if (waitingShown) {
         waitingShown = false;
-        setMessage('つぎの バーコードを かざしてね', false);
+        setMessage(useCamera ? 'つぎの バーコードを かざしてね' : 'つぎを おしてね', false);
       }
     }
   }
@@ -933,7 +1125,7 @@ function playBeep(volume) {
 function speak(text) {
   if (!settings.speak) return;
   try {
-    speechSynthesis.cancel();   // かさならないように いったん とめる
+    speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP';
     u.rate = 1.0;
@@ -947,7 +1139,7 @@ function speak(text) {
    ========================================================= */
 async function showPayment() {
   stopLoop();
-  await stopScanner();
+  if (useCamera) await stopScanner();
 
   payTotal.textContent = totalAmount.toLocaleString() + '円';
   payCount.textContent = scanCount + '個の おかいもの';
@@ -965,17 +1157,16 @@ async function resetApp() {
   waitingShown = false;
 
   updateDisplay();
-  setMessage('バーコードを かざしてね', false);
+  setMessage(useCamera ? 'バーコードを かざしてね' : 'ボタンで れんしゅうしよう', false);
   guideFrame.classList.remove('waiting');
   guideFrame.classList.remove('hit');
 
   paymentScreen.style.display = 'none';
 
-  await startScanner();
+  if (useCamera) await startScanner();
   startLoop();
 }
 
-/* ダブルタップズームよけ */
 document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
 </script>
 

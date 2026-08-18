@@ -63,16 +63,20 @@ button {
 }
 
 .setting-toggle-btn {
-  width: 100%;
-  max-width: 560px;
-  font-size: 17px;
-  font-weight: 700;
+  width: 56px;
+  height: 56px;
+  font-size: 26px;
+  line-height: 1;
   color: #E65100;
   background-color: #FFF3E0;
   border: 3px solid #FFCC80;
-  border-radius: 14px;
-  padding: 14px 12px;
+  border-radius: 50%;
+  align-self: flex-end;
   margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 .setting-toggle-btn:active { background-color: #FFE0B2; }
 
@@ -174,58 +178,6 @@ button {
   transition: transform .08s;
 }
 #start-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #BF360C; }
-
-/* カメラ診断カード */
-#camera-card {
-  width: 100%;
-  max-width: 560px;
-  background-color: #FFFDE7;
-  border: 3px solid #FFE082;
-  border-radius: 16px;
-  padding: 12px 14px 14px;
-  margin-bottom: 16px;
-}
-
-#camera-card h2 { font-size: 16px; color: #F57F17; margin-bottom: 8px; }
-
-.diag-list {
-  font-size: 13px;
-  color: #6D4C41;
-  line-height: 1.9;
-  -webkit-user-select: text;
-  user-select: text;
-}
-
-.diag-list .ng { color: #C62828; font-weight: 700; }
-.diag-list .ok { color: #2E7D32; font-weight: 700; }
-
-#camera-help {
-  font-size: 14px;
-  color: #BF360C;
-  background-color: #FFEBEE;
-  border-radius: 10px;
-  padding: 10px;
-  margin-top: 10px;
-  line-height: 1.7;
-  display: none;
-  -webkit-user-select: text;
-  user-select: text;
-}
-
-.help-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-
-.btn-retry {
-  flex: 1 1 150px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-  background-color: #1E88E5;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 8px;
-  box-shadow: 0 4px 0 #1565C0;
-}
-.btn-retry:active { transform: translateY(3px); box-shadow: 0 1px 0 #1565C0; }
 
 /* ========== メイン画面 ========== */
 #main-screen {
@@ -335,6 +287,22 @@ button {
   -webkit-user-select: text;
   user-select: text;
   display: none;
+}
+
+.start-err {
+  width: 100%;
+  max-width: 560px;
+  font-size: 14px;
+  color: #BF360C;
+  background-color: #FFEBEE;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+  line-height: 1.7;
+  text-align: left;
+  display: none;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 #retry-cam-btn {
@@ -464,16 +432,9 @@ button {
 <div id="start-screen">
   <h1>100<ruby>均<rt>きん</rt></ruby>レジ</h1>
 
-  <div id="camera-card">
-    <h2>カメラの ようす</h2>
-    <div class="diag-list" id="diag-list"></div>
-    <div id="camera-help"></div>
-    <div class="help-row">
-      <button class="btn-retry" onclick="retryCamera()">カメラを もういちど</button>
-    </div>
-  </div>
+  <div class="start-err" id="start-err"></div>
 
-  <button id="toggle-setting-btn" class="setting-toggle-btn" onclick="toggleSettingCard()">⚙️ せんせいの せってい</button>
+  <button id="toggle-setting-btn" class="setting-toggle-btn" onclick="toggleSettingCard()">⚙️</button>
 
   <div class="setting-card" id="setting-card" style="display:none;">
     <h2>せんせいの せってい</h2>
@@ -492,7 +453,7 @@ button {
       <div class="setting-label">つぎに はんのうするまでの あいだ</div>
       <div class="number-box">
         <button class="step-btn" onclick="stepCooldown(-1)">▽</button>
-        <input type="text" inputmode="decimal" id="cooldown-input" value="1.8">
+        <input type="text" inputmode="decimal" id="cooldown-input" value="2.0">
         <button class="step-btn" onclick="stepCooldown(1)">△</button>
         <span class="number-unit"><ruby>秒<rt>びょう</rt></ruby></span>
       </div>
@@ -601,7 +562,7 @@ const LOOSE_PRESET = {
 };
 
 const settings = {
-  loose:2, cooldown:1.8,
+  loose:2, cooldown:2.0,
   priceMode:'fixed',   // 'fixed' または 'random'
   price:110,
   randomMin:50, randomMax:500,
@@ -650,59 +611,19 @@ const randomMinInput = document.getElementById('random-min-input');
 const randomMaxInput = document.getElementById('random-max-input');
 const beepBtn      = document.getElementById('beep-btn');
 const speakBtn     = document.getElementById('speak-btn');
-const diagList     = document.getElementById('diag-list');
-const cameraHelp   = document.getElementById('camera-help');
 const toggleSettingBtn = document.getElementById('toggle-setting-btn');
 
+const startErr     = document.getElementById('start-err');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-/* =========================================================
-   カメラの かんきょうチェック
-   ========================================================= */
-function envInfo() {
-  const inFrame = (function(){ try { return window.self !== window.top; } catch(e){ return true; } })();
-  return {
-    protocol: location.protocol.replace(':',''),
-    secure: !!window.isSecureContext,
-    hasApi: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
-    inFrame: inFrame
-  };
-}
-
-function renderDiag(extra) {
-  const e = envInfo();
-  const mark = (ok) => ok ? '<span class="ok">OK</span>' : '<span class="ng">NG</span>';
-  let html = '';
-  html += 'つなぎかた：' + e.protocol + '　' + mark(e.protocol === 'https' || location.hostname === 'localhost') + '<br>';
-  html += 'あんぜんな ページ（isSecureContext）：' + mark(e.secure) + '<br>';
-  html += 'カメラのしくみ（mediaDevices）：' + mark(e.hasApi) + '<br>';
-  html += 'わくの中（iframe）で ひらいている：' + (e.inFrame ? '<span class="ng">はい</span>' : '<span class="ok">いいえ</span>');
-  if (extra) html += '<br>' + extra;
-  diagList.innerHTML = html;
-}
-
-function showHelp(msg) { cameraHelp.innerHTML = msg; cameraHelp.style.display = 'block'; }
-function hideHelp() { cameraHelp.style.display = 'none'; }
-
-(function initDiag() {
-  const e = envInfo();
-  renderDiag();
-  if (!e.hasApi || !e.secure) {
-    showHelp('この ひらきかたでは カメラが つかえません。<br>'
-      + '・<b>https://</b> の アドレスで ひらいてね（GitHub Pages はOK）<br>'
-      + '・ファイルを ダブルクリックして ひらいた（file://）ばあいは つかえません');
-  } else if (e.inFrame) {
-    showHelp('わくの中（プレビューなど）で ひらいています。<br>'
-      + 'ここでは カメラの <ruby>許可<rt>きょか</rt></ruby>ダイアログが 出ないことが あります。'
-      + '<b>べつのタブで ひらく</b>か、GitHub Pages で ためしてね。');
-  }
-})();
+function showHelp(msg) { startErr.innerHTML = msg; startErr.style.display = 'block'; }
+function hideHelp() { startErr.style.display = 'none'; startErr.innerHTML = ''; }
 
 function toggleSettingCard() {
   const card = document.getElementById('setting-card');
   const isOpen = card.style.display !== 'none';
   card.style.display = isOpen ? 'none' : 'block';
-  toggleSettingBtn.textContent = isOpen ? '⚙️ せんせいの せってい' : '⚙️ せっていを とじる';
+  toggleSettingBtn.textContent = isOpen ? '⚙️' : '✕';
 }
 
 /* =========================================================
@@ -720,7 +641,7 @@ looseNote.textContent = LOOSE_PRESET[settings.loose].note;
 
 function stepCooldown(dir) {
   let v = parseFloat(cooldownInput.value);
-  if (isNaN(v)) v = 1.8;
+  if (isNaN(v)) v = 2.0;
   v = Math.round((v + dir * 0.2) * 10) / 10;
   v = Math.min(5.0, Math.max(0.6, v));
   settings.cooldown = v;
@@ -728,7 +649,7 @@ function stepCooldown(dir) {
 }
 cooldownInput.addEventListener('change', () => {
   let v = parseFloat(cooldownInput.value);
-  if (isNaN(v)) v = 1.8;
+  if (isNaN(v)) v = 2.0;
   v = Math.min(5.0, Math.max(0.6, Math.round(v * 10) / 10));
   settings.cooldown = v;
   cooldownInput.value = v.toFixed(1);
@@ -863,18 +784,6 @@ function explainCameraError(err) {
     help += '・' + msg;
   }
   showHelp(help);
-  renderDiag('エラー：<span class="ng">' + name + '</span>' + (msg ? '（' + msg + '）' : ''));
-}
-
-async function retryCamera() {
-  hideHelp();
-  renderDiag('カメラを きいています…');
-  try {
-    await askCameraPermission();
-    renderDiag('カメラ：<span class="ok">つかえます</span>');
-  } catch (err) {
-    explainCameraError(err);
-  }
 }
 
 /* =========================================================

@@ -65,20 +65,18 @@ button {
 .setting-toggle-btn {
   width: 56px;
   height: 56px;
-  font-size: 26px;
+  font-size: 30px;
   line-height: 1;
   color: #E65100;
-  background-color: #FFF3E0;
-  border: 3px solid #FFCC80;
-  border-radius: 50%;
-  align-self: flex-end;
-  margin-bottom: 16px;
+  background-color: transparent;
+  border: none;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
 }
-.setting-toggle-btn:active { background-color: #FFE0B2; }
+.setting-toggle-btn:active { opacity: 0.6; }
 
 .setting-card {
   width: 100%;
@@ -166,14 +164,21 @@ button {
 
 .number-unit { font-size: 16px; font-weight: 700; color: #795548; }
 
+.start-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
 #start-btn {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   color: #fff;
   background-color: #FF6D00;
   border: none;
   border-radius: 16px;
-  padding: 20px 44px;
+  padding: 18px 32px;
   box-shadow: 0 5px 0 #BF360C;
   transition: transform .08s;
 }
@@ -434,8 +439,6 @@ button {
 
   <div class="start-err" id="start-err"></div>
 
-  <button id="toggle-setting-btn" class="setting-toggle-btn" onclick="toggleSettingCard()">⚙️</button>
-
   <div class="setting-card" id="setting-card" style="display:none;">
     <h2>せんせいの せってい</h2>
 
@@ -504,7 +507,10 @@ button {
     </div>
   </div>
 
-  <button id="start-btn" onclick="startApp()">レジを はじめる</button>
+  <div class="start-row">
+    <button id="start-btn" onclick="startApp()">レジを はじめる</button>
+    <button id="toggle-setting-btn" class="setting-toggle-btn" onclick="toggleSettingCard()">⚙️</button>
+  </div>
 </div>
 
 <!-- ===== メイン画面 ===== -->
